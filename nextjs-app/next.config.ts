@@ -32,6 +32,14 @@ const nextConfig: NextConfig = {
   // Экспериментальные функции отключены для стабильности
   experimental: {
     // optimizeCss: true, // Вызывает задержки в dev режиме
+    turbo: {
+      root: '../', // Fixes "inferred your workspace root" warning
+    }
+  },
+  logging: {
+    fetches: {
+      fullUrl: true,
+    },
   },
 
   // Заголовки безопасности
