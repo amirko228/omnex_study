@@ -6,6 +6,7 @@ type Props = {
     params: Promise<{ slug: string }>;
 };
 
+// Next.js 15: params are now async and must be awaited
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { slug } = await params;
     const post = blogPosts.find((p: { slug: string }) => p.slug === slug);
