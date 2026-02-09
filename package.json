@@ -54,6 +54,7 @@
             "vite": "6.3.5"
       },
       "scripts": {
+            "install:all": "npm install && npm install --prefix nextjs-app",
             "dev": "npm run dev --prefix nextjs-app",
             "build": "npm run build --prefix nextjs-app",
             "start": "npm run start --prefix nextjs-app",
