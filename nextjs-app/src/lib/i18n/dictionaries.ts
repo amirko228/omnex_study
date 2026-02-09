@@ -17,6 +17,5 @@ export const getDictionary = async (locale: Locale) => {
   return dictionaries[locale] || dictionaries.en;
 };
 
-export type Dictionary = {
-  [key: string]: string | Dictionary;
-};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Dictionary = Record<string, any>;

@@ -30,7 +30,7 @@ export default function DashboardPage() {
     return (
         <DashboardPageComponent
             dict={dict}
-            user={user}
+            user={user ?? null}
             setCurrentPage={handleNavigate}
         />
     );

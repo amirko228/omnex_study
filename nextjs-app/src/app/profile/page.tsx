@@ -27,7 +27,7 @@ export default function ProfilePage() {
         <ProfileSettings
             dict={dict}
             locale={locale}
-            user={user}
+            user={user ?? null}
         />
     );
 }

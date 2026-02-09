@@ -20,7 +20,7 @@ import { AnimatedCard } from '@/components/ui/animated-elements';
 type ProfileSettingsProps = {
   dict: Dictionary;
   locale: Locale;
-  user: import('@/types').User;
+  user: import('@/types').User | null;
 };
 
 export function ProfileSettings({ dict, locale, user }: ProfileSettingsProps) {
