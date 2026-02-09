@@ -9,10 +9,12 @@ import { AnimatedCard } from '@/components/ui/animated-elements';
 import { DictionaryFallback } from '@/components/ui/dictionary-fallback';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 
+import type { User } from '@/types';
+
 interface DashboardPageProps {
     dict: Dictionary;
-    user: any;
-    setCurrentPage: (page: any) => void;
+    user: User | null;
+    setCurrentPage: (page: string) => void;
 }
 
 export const DashboardPage = ({ dict, user, setCurrentPage }: DashboardPageProps) => {

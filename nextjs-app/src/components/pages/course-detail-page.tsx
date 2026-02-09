@@ -9,10 +9,12 @@ import { ArrowRight, Check, Star, BookOpen, Clock } from 'lucide-react';
 import { DictionaryFallback } from '@/components/ui/dictionary-fallback';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 
+import type { Course, Lesson } from '@/types';
+
 interface CourseDetailPageProps {
     dict: Dictionary;
-    selectedCourse: any;
-    setCurrentPage: (page: any) => void;
+    selectedCourse: Course;
+    setCurrentPage: (page: string) => void;
 }
 
 export const CourseDetailPage = ({ dict, selectedCourse, setCurrentPage }: CourseDetailPageProps) => {
@@ -79,7 +81,7 @@ export const CourseDetailPage = ({ dict, selectedCourse, setCurrentPage }: Cours
 
                         <TabsContent value="curriculum" className="focus-visible:outline-none">
                             <div className="space-y-6">
-                                {selectedCourse.modules.map((module: any, idx: number) => (
+                                {(selectedCourse.modules || []).map((module: any, idx: number) => (
                                     <Card key={module.id} className="overflow-hidden border-none shadow-sm ring-1 ring-border">
                                         <CardHeader className="bg-muted/30">
                                             <CardTitle className="text-lg">
@@ -145,7 +147,7 @@ export const CourseDetailPage = ({ dict, selectedCourse, setCurrentPage }: Cours
                             <div className="space-y-4 text-base">
                                 <div className="flex justify-between items-center py-1 border-b border-dashed">
                                     <span className="text-muted-foreground">{dict.course.students}</span>
-                                    <span className="font-semibold">{selectedCourse.studentsCount.toLocaleString()}</span>
+                                    <span className="font-semibold">{(selectedCourse.studentsCount || selectedCourse.enrolledCount || 0).toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between items-center py-1 border-b border-dashed">
                                     <span className="text-muted-foreground">{dict.course.lessons}</span>

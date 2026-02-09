@@ -63,30 +63,8 @@ export function HeroSection({ dict, onNavigate, isAuthenticated, handleCTAClick 
                 />
             </div>
 
-            {/* Floating particles - Red theme */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                {[...Array(20)].map((_, i) => (
-                    <motion.div
-                        key={i}
-                        animate={{
-                            y: [0, -1000],
-                            x: [0, Math.random() * 200 - 100],
-                            opacity: [0, 1, 0]
-                        }}
-                        transition={{
-                            duration: Math.random() * 10 + 10,
-                            repeat: Infinity,
-                            delay: Math.random() * 5,
-                            ease: "linear"
-                        }}
-                        className="absolute w-1 h-1 bg-primary/40 rounded-full"
-                        style={{
-                            left: `${Math.random() * 100}%`,
-                            bottom: -10,
-                        }}
-                    />
-                ))}
-            </div>
+            {/* Floating particles - Red theme - Client side only to avoid hydration mismatch */}
+            <ParticleEffects />
 
             <div className="container mx-auto px-4 relative z-10">
                 <div className="mx-auto max-w-5xl text-center">
@@ -194,5 +172,41 @@ export function HeroSection({ dict, onNavigate, isAuthenticated, handleCTAClick 
                 </div>
             </div>
         </section>
+    );
+}
+
+function ParticleEffects() {
+    const [mounted, setMounted] = import('react').useState(false);
+
+    import('react').useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (!mounted) return null;
+
+    return (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {[...Array(20)].map((_, i) => (
+                <motion.div
+                    key={i}
+                    animate={{
+                        y: [0, -1000],
+                        x: [0, Math.random() * 200 - 100],
+                        opacity: [0, 1, 0]
+                    }}
+                    transition={{
+                        duration: Math.random() * 10 + 10,
+                        repeat: Infinity,
+                        delay: Math.random() * 5,
+                        ease: "linear"
+                    }}
+                    className="absolute w-1 h-1 bg-primary/40 rounded-full"
+                    style={{
+                        left: `${Math.random() * 100}%`,
+                        bottom: -10,
+                    }}
+                />
+            ))}
+        </div>
     );
 }

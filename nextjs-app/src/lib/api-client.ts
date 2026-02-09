@@ -42,7 +42,10 @@ class ApiClient {
   /**
    * Build URL with query parameters
    */
-  private buildUrl(endpoint: string, params?: Record<string, any>): string {
+  /**
+   * Build URL with query parameters
+   */
+  private buildUrl(endpoint: string, params?: Record<string, string | number | boolean | undefined | null>): string {
     const url = new URL(`${this.baseUrl}${endpoint}`);
 
     if (params) {
@@ -59,7 +62,7 @@ class ApiClient {
   /**
    * Make HTTP request
    */
-  private async request<T = any>(
+  private async request<T>(
     endpoint: string,
     options: ApiRequestOptions = {}
   ): Promise<ApiResponse<T>> {
@@ -90,7 +93,7 @@ class ApiClient {
     try {
       // Auth: Login
       if (endpoint === '/auth/login') {
-        const { email } = body as any;
+        const { email } = body as { email: string };
         // Import mock data dynamically to avoid circular dependencies if any
         const { mockUser } = await import('@/lib/api/mock-data');
 
@@ -100,14 +103,14 @@ class ApiClient {
             user: { ...mockUser, email },
             token: 'mock_jwt_token_12345',
             refreshToken: 'mock_refresh_token_67890'
-          } as any,
+          } as unknown as T,
           message: 'Successfully logged in'
         };
       }
 
       // Auth: Register
       if (endpoint === '/auth/register') {
-        const { email, name } = body as any;
+        const { email, name } = body as { email: string; name?: string };
         const { mockUser } = await import('@/lib/api/mock-data');
 
         return {
@@ -116,7 +119,7 @@ class ApiClient {
             user: { ...mockUser, email, name: name || mockUser.name },
             token: 'mock_jwt_token_12345',
             refreshToken: 'mock_refresh_token_67890'
-          } as any,
+          } as unknown as T,
           message: 'Registration successful'
         };
       }
@@ -126,7 +129,7 @@ class ApiClient {
         const { mockUser } = await import('@/lib/api/mock-data');
         return {
           success: true,
-          data: mockUser as any
+          data: mockUser as unknown as T
         };
       }
 
@@ -134,7 +137,7 @@ class ApiClient {
       if (endpoint === '/auth/logout') {
         return {
           success: true,
-          data: null as any,
+          data: null as unknown as T,
           message: 'Logged out successfully'
         };
       }
@@ -144,7 +147,7 @@ class ApiClient {
         const { mockCourses } = await import('@/lib/api/mock-data');
         return {
           success: true,
-          data: mockCourses as any
+          data: mockCourses as unknown as T
         };
       }
 
@@ -157,7 +160,7 @@ class ApiClient {
         if (course) {
           return {
             success: true,
-            data: course as any
+            data: course as unknown as T
           };
         }
       }
@@ -197,21 +200,19 @@ class ApiClient {
 
       return {
         success: true,
-        data: data.data || data,
+        data: (data.data || data) as T,
         message: data.message,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('API Request Error:', error);
 
-      // If mock didn't catch it and real auth failed, check if it was an auth endpoint
-      // and fail gracefully or force success for demo if needed.
-      // For now, return error.
+      const errorMessage = error instanceof Error ? error.message : 'Network error occurred';
 
       return {
         success: false,
         error: {
           code: 'NETWORK_ERROR',
-          message: error.message || 'Network error occurred',
+          message: errorMessage,
         },
       };
     }
@@ -220,42 +221,42 @@ class ApiClient {
   /**
    * GET request
    */
-  async get<T = any>(endpoint: string, params?: Record<string, any>): Promise<ApiResponse<T>> {
+  async get<T>(endpoint: string, params?: Record<string, string | number | boolean | undefined | null>): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'GET', params });
   }
 
   /**
    * POST request
    */
-  async post<T = any>(endpoint: string, body?: any): Promise<ApiResponse<T>> {
+  async post<T>(endpoint: string, body?: unknown): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'POST', body });
   }
 
   /**
    * PUT request
    */
-  async put<T = any>(endpoint: string, body?: any): Promise<ApiResponse<T>> {
+  async put<T>(endpoint: string, body?: unknown): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'PUT', body });
   }
 
   /**
    * PATCH request
    */
-  async patch<T = any>(endpoint: string, body?: any): Promise<ApiResponse<T>> {
+  async patch<T>(endpoint: string, body?: unknown): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'PATCH', body });
   }
 
   /**
    * DELETE request
    */
-  async delete<T = any>(endpoint: string): Promise<ApiResponse<T>> {
+  async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'DELETE' });
   }
 
   /**
    * Upload file
    */
-  async upload<T = any>(endpoint: string, file: File, additionalData?: Record<string, any>): Promise<ApiResponse<T>> {
+  async upload<T>(endpoint: string, file: File, additionalData?: Record<string, string | number | boolean>): Promise<ApiResponse<T>> {
     const formData = new FormData();
     formData.append('file', file);
 
@@ -294,15 +295,16 @@ class ApiClient {
 
       return {
         success: true,
-        data: data.data || data,
+        data: (data.data || data) as T,
         message: data.message,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Upload failed';
       return {
         success: false,
         error: {
           code: 'UPLOAD_ERROR',
-          message: error.message || 'Upload failed',
+          message: errorMessage,
         },
       };
     }

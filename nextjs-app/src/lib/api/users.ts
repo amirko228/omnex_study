@@ -54,7 +54,7 @@ export const usersApi = {
       totalTimeSpent: number;
       averageScore: number;
       streak: number;
-      achievements: any[];
+      achievements: import('@/types').Achievement[];
     }>
   > {
     return apiClient.get('/users/statistics');
@@ -63,7 +63,7 @@ export const usersApi = {
   /**
    * Get user achievements
    */
-  async getAchievements(): Promise<ApiResponse<any[]>> {
+  async getAchievements(): Promise<ApiResponse<import('@/types').Achievement[]>> {
     return apiClient.get('/users/achievements');
   },
 

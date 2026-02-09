@@ -10,12 +10,14 @@ import { mockCourses } from '@/lib/api/mock-data';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 import type { Locale } from '@/lib/i18n/config';
 
+import type { Course } from '@/types';
+
 interface CoursesPageProps {
     dict: Dictionary;
     locale: Locale;
     purchasedCourses: string[];
-    setCurrentPage: (page: any) => void;
-    setSelectedCourse: (course: any) => void;
+    setCurrentPage: (page: string) => void;
+    setSelectedCourse: (course: Course) => void;
 }
 
 export const CoursesPage = ({ dict, locale, purchasedCourses, setCurrentPage, setSelectedCourse }: CoursesPageProps) => {

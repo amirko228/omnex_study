@@ -30,7 +30,7 @@ export const storage = {
   /**
    * Set item in localStorage
    */
-  set(key: string, value: any): void {
+  set(key: string, value: unknown): void {
     if (typeof window === 'undefined') return;
 
     try {

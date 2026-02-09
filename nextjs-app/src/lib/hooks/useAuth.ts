@@ -30,8 +30,8 @@ export function useAuth() {
 
     // Login mutation
     const loginMutation = useMutation({
-        mutationFn: async ({ email, password }: any) => {
-            const response = await authApi.login(email, password);
+        mutationFn: async ({ email, password }: import('@/types').LoginCredentials) => {
+            const response = await authApi.login(email, password || '');
             if (!response.success) {
                 throw new Error(response.error?.message || 'Login failed');
             }
@@ -52,7 +52,7 @@ export function useAuth() {
 
     // Register mutation
     const registerMutation = useMutation({
-        mutationFn: async (data: any) => {
+        mutationFn: async (data: import('@/types').RegisterDTO) => {
             const response = await authApi.register(data);
             if (!response.success) {
                 throw new Error(response.error?.message || 'Registration failed');

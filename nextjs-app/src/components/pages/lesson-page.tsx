@@ -10,12 +10,14 @@ import { mockChatMessages } from '@/lib/api/mock-data';
 import { toast } from 'sonner';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 
+import type { Course, CourseFormat } from '@/types';
+
 interface LessonPageProps {
     dict: Dictionary;
-    selectedCourse: any;
-    selectedFormat: string | null;
-    setSelectedFormat: (format: any) => void;
-    setCurrentPage: (page: any) => void;
+    selectedCourse: Course;
+    selectedFormat: CourseFormat | null;
+    setSelectedFormat: (format: CourseFormat) => void;
+    setCurrentPage: (page: string) => void;
 }
 
 export const LessonPage = ({ dict, selectedCourse, selectedFormat, setSelectedFormat, setCurrentPage }: LessonPageProps) => {
@@ -24,7 +26,7 @@ export const LessonPage = ({ dict, selectedCourse, selectedFormat, setSelectedFo
         return <DictionaryFallback />;
     }
 
-    const lesson = selectedCourse.modules[0]?.lessons[0];
+    const lesson = selectedCourse.modules?.[0]?.lessons?.[0];
 
     if (!lesson) {
         return (

@@ -16,7 +16,7 @@ export type NotificationType = 'course_update' | 'payment' | 'reminder' | 'marke
 
 export type OAuthProvider = 'google' | 'vk' | 'yandex';
 
-export type CourseFormat = 'text' | 'quiz' | 'chat' | 'assignment';
+export type CourseFormat = 'text' | 'quiz' | 'chat' | 'assignment' | 'video';
 
 export type CourseDifficulty = 'beginner' | 'intermediate' | 'advanced';
 
@@ -25,6 +25,27 @@ export type LessonType = 'video' | 'text' | 'quiz' | 'assignment' | 'chat';
 // ============================================================================
 // USER TYPES
 // ============================================================================
+
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  unlockedAt: Date;
+  progress: number;
+  maxProgress: number;
+}
+
+export interface StudyScheduleItem {
+  id: string;
+  date: Date;
+  activity: string;
+  duration: number;
+  completed: boolean;
+  courseId?: string;
+  lessonId?: string;
+}
 
 export interface User {
   id: string;
@@ -39,6 +60,7 @@ export interface User {
   updatedAt: Date;
   profile?: UserProfile;
   subscription?: 'free' | 'pro' | 'enterprise';
+  plan?: 'free' | 'pro' | 'enterprise'; // Alias for subscription
   purchasedCourses?: string[];
 }
 
@@ -68,6 +90,19 @@ export interface AuthResponse {
   tokens: AuthTokens;
 }
 
+export interface LoginCredentials {
+  email: string;
+  password?: string;
+}
+
+export interface RegisterDTO {
+  email: string;
+  password: string;
+  name: string;
+  role?: UserRole;
+  locale?: Locale;
+}
+
 // ============================================================================
 // COURSE TYPES
 // ============================================================================
@@ -78,8 +113,10 @@ export interface Course {
   description: string;
   shortDescription?: string;
   coverImage?: string;
+  thumbnail?: string; // Alias for coverImage
   difficulty: CourseDifficulty;
-  duration: number; // in minutes
+  level?: CourseDifficulty; // Alias for difficulty
+  duration: number; // in minutes or hours
   lessonsCount: number;
   modulesCount: number;
   category: string;
@@ -87,6 +124,7 @@ export interface Course {
   rating: number;
   reviewsCount: number;
   enrolledCount: number;
+  studentsCount?: number; // Alias for enrolledCount
   isPublished: boolean;
   isFeatured: boolean;
   isAIGenerated: boolean;
@@ -94,11 +132,15 @@ export interface Course {
   availableLanguages: Locale[];
   authorId: string;
   author?: User;
+  instructor?: string; // For mock data
   price: number;
   currency: string;
   createdAt: Date;
   updatedAt: Date;
   modules?: CourseModule[];
+  formats?: CourseFormat[];
+  isEnrolled?: boolean;
+  progress?: number;
 }
 
 export interface CourseModule {
@@ -260,7 +302,7 @@ export interface Payment {
   provider: PaymentProvider;
   providerId?: string;
   description: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -301,7 +343,7 @@ export interface Notification {
   channel: NotificationChannel;
   title: string;
   message: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
   isRead: boolean;
   readAt?: Date;
   createdAt: Date;
@@ -366,7 +408,7 @@ export interface AITranslationRequest {
 // API TYPES
 // ============================================================================
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: ApiError;
@@ -376,7 +418,7 @@ export interface ApiResponse<T = any> {
 export interface ApiError {
   code: string;
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 export interface PaginatedResponse<T> {
@@ -392,8 +434,8 @@ export interface PaginatedResponse<T> {
 export interface ApiRequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   headers?: Record<string, string>;
-  body?: any;
-  params?: Record<string, any>;
+  body?: unknown;
+  params?: Record<string, unknown>;
 }
 
 // ============================================================================
@@ -404,7 +446,7 @@ export interface WebhookEvent {
   id: string;
   type: string;
   provider: PaymentProvider;
-  data: any;
+  data: unknown;
   verified: boolean;
   processed: boolean;
   createdAt: Date;

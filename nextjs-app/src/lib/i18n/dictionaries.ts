@@ -17,4 +17,6 @@ export const getDictionary = async (locale: Locale) => {
   return dictionaries[locale] || dictionaries.en;
 };
 
-export type Dictionary = Record<string, any>;
+export type Dictionary = {
+  [key: string]: string | Dictionary;
+};

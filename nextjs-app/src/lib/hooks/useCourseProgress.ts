@@ -55,7 +55,7 @@ export function useCourseProgress() {
    */
   const enrollCourse = (courseId: string) => {
     const now = new Date().toISOString();
-    
+
     setProgressData((prev) => ({
       ...prev,
       courses: {
@@ -266,7 +266,7 @@ export function useCourseProgress() {
    */
   const resetCourseProgress = (courseId: string) => {
     setProgressData((prev) => {
-      const { [courseId]: removed, ...remainingCourses } = prev.courses;
+      const { [courseId]: _removed, ...remainingCourses } = prev.courses;
       return {
         ...prev,
         courses: remainingCourses,

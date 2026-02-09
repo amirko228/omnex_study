@@ -72,7 +72,7 @@ export const coursesApi = {
    */
   async submitQuizAttempt(
     quizId: string,
-    answers: Record<string, any>
+    answers: Record<string, unknown>
   ): Promise<ApiResponse<QuizAttempt>> {
     return apiClient.post<QuizAttempt>(`/quizzes/${quizId}/attempts`, { answers });
   },

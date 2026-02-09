@@ -89,12 +89,12 @@ export type ContentAdaptationRequest = {
 class AIService {
   private apiKey: string | null = null;
   private baseUrl: string = '/api/ai'; // Backend API endpoint
-  private cache: Map<string, any> = new Map();
+  private cache: Map<string, unknown> = new Map();
 
   constructor() {
     // In production, get API key from environment or user settings
-    this.apiKey = typeof window !== 'undefined' 
-      ? localStorage.getItem('ai_api_key') 
+    this.apiKey = typeof window !== 'undefined'
+      ? localStorage.getItem('ai_api_key')
       : null;
   }
 
@@ -103,10 +103,10 @@ class AIService {
    */
   async generateCourse(request: CourseGenerationRequest): Promise<GeneratedCourse> {
     const cacheKey = `course_${request.topic}_${request.level}_${request.language}`;
-    
+
     // Check cache first
     if (this.cache.has(cacheKey)) {
-      return this.cache.get(cacheKey);
+      return this.cache.get(cacheKey) as GeneratedCourse;
     }
 
     // Simulate AI processing delay
@@ -114,13 +114,14 @@ class AIService {
 
     // AI Prompt (would be sent to real AI in production)
     const prompt = this.buildCourseGenerationPrompt(request);
-    
+    console.log('AI Prompt:', prompt);
+
     // Mock AI-generated course (in production, call real AI API)
     const course = this.mockGenerateCourse(request);
-    
+
     // Cache the result
     this.cache.set(cacheKey, course);
-    
+
     return course;
   }
 
@@ -129,19 +130,20 @@ class AIService {
    */
   async translateContent(request: TranslationRequest): Promise<string> {
     const cacheKey = `translate_${request.content.substring(0, 50)}_${request.toLanguage}`;
-    
+
     if (this.cache.has(cacheKey)) {
-      return this.cache.get(cacheKey);
+      return this.cache.get(cacheKey) as string;
     }
 
     await this.delay(500);
 
     // AI Prompt for translation
     const prompt = `Translate the following ${request.context || 'text'} from ${request.fromLanguage} to ${request.toLanguage}. Maintain the tone and technical accuracy:\n\n${request.content}`;
+    console.log('Translation Prompt:', prompt);
 
     // Mock translation (in production, call real AI)
     const translated = this.mockTranslate(request);
-    
+
     this.cache.set(cacheKey, translated);
     return translated;
   }
@@ -151,19 +153,20 @@ class AIService {
    */
   async adaptDifficulty(request: ContentAdaptationRequest): Promise<string> {
     const cacheKey = `adapt_${request.content.substring(0, 50)}_${request.targetLevel}`;
-    
+
     if (this.cache.has(cacheKey)) {
-      return this.cache.get(cacheKey);
+      return this.cache.get(cacheKey) as string;
     }
 
     await this.delay(1000);
 
     // AI Prompt for difficulty adaptation
     const prompt = `Adapt the following content from ${request.currentLevel} to ${request.targetLevel} level in ${request.language}. Adjust complexity, examples, and explanations accordingly:\n\n${request.content}`;
+    console.log('Adaptation Prompt:', prompt);
 
     // Mock adaptation
     const adapted = this.mockAdaptDifficulty(request);
-    
+
     this.cache.set(cacheKey, adapted);
     return adapted;
   }
@@ -172,14 +175,15 @@ class AIService {
    * Generate lesson in specific format
    */
   async generateLesson(
-    topic: string, 
-    format: LessonFormat, 
+    topic: string,
+    format: LessonFormat,
     level: DifficultyLevel,
     language: Locale
   ): Promise<GeneratedLesson> {
     await this.delay(1500);
 
     const prompt = `Generate a ${level} level ${format} lesson about "${topic}" in ${language}.`;
+    console.log('Lesson Prompt:', prompt);
 
     return this.mockGenerateLesson(topic, format, level, language);
   }
@@ -199,6 +203,7 @@ class AIService {
     await this.delay(800);
 
     const prompt = `You are an AI tutor helping a ${context.userLevel || 'intermediate'} level student. Respond to their question in ${context.language}:\n\nStudent: ${message}\n\nTutor:`;
+    console.log('Tutor Prompt:', prompt);
 
     // Mock AI tutor response
     return this.mockTutorResponse(message, context);
@@ -268,7 +273,7 @@ Output format: JSON with course metadata, modules, and lessons.
         id: `module-${i + 1}`,
         title: `${this.getModuleWord(request.language)} ${i + 1}: ${this.getModuleTitle(request.topic, i, request.language)}`,
         description: this.getModuleDescription(i, request.language),
-        lessons: Array.from({ length: lessonsPerModule }, (_, j) => 
+        lessons: Array.from({ length: lessonsPerModule }, (_, j) =>
           this.mockGenerateLesson(
             `${request.topic} - ${this.getLessonTopic(i, j, request.language)}`,
             this.selectLessonFormat(j, request.format),
@@ -332,11 +337,11 @@ Output format: JSON with course metadata, modules, and lessons.
 
   private mockAdaptDifficulty(request: ContentAdaptationRequest): string {
     const prefix = request.targetLevel === 'beginner' ? '[Simplified] ' :
-                   request.targetLevel === 'advanced' ? '[Advanced] ' : '';
+      request.targetLevel === 'advanced' ? '[Advanced] ' : '';
     return `${prefix}${request.content}`;
   }
 
-  private mockTutorResponse(message: string, context: any): string {
+  private mockTutorResponse(message: string, context: { language: Locale; userLevel?: DifficultyLevel }): string {
     const responses: Record<Locale, string[]> = {
       ru: [
         'Отличный вопрос! Давайте разберем это подробнее...',

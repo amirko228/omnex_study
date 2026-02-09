@@ -7,7 +7,7 @@ import { useState, useEffect, createContext, useContext, type ReactNode } from '
 import { getDictionary, type Dictionary } from '@/lib/i18n/dictionaries';
 import { mockCourses } from '@/lib/api/mock-data';
 import type { Locale } from '@/lib/i18n/config';
-import type { CourseFormat } from '@/types';
+import type { CourseFormat, User, LoginCredentials, RegisterDTO } from '@/types';
 import { useAuth } from '@/lib/hooks/useAuth';
 
 // App Context
@@ -15,9 +15,9 @@ type AppContextType = {
     // Auth
     isAuthenticated: boolean;
     isLoading: boolean;
-    user: any;
-    login: (data: any) => void;
-    register: (data: any) => void;
+    user: User | null | undefined;
+    login: (data: LoginCredentials) => void;
+    register: (data: RegisterDTO) => void;
     logout: () => void;
     // Locale
     locale: Locale;
@@ -112,7 +112,7 @@ function AppStateProvider({ children }: { children: ReactNode }) {
         isLoading,
         user,
         login,
-        register: (data: any) => { register(data); },
+        register: (data: RegisterDTO) => { register(data); },
         logout,
         locale,
         setLocale,

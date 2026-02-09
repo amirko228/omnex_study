@@ -15,10 +15,12 @@ export function DictionaryFallback() {
     );
 }
 
+import type { Dictionary } from '@/lib/i18n/dictionaries';
+
 /**
  * HOC для обёртки компонентов с проверкой dict
  */
-export function withDictionaryCheck<P extends { dict: any }>(
+export function withDictionaryCheck<P extends { dict: Dictionary | null }>(
     Component: React.ComponentType<P>
 ): React.FC<P> {
     return function WrappedComponent(props: P) {

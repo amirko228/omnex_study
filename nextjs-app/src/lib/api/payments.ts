@@ -21,7 +21,7 @@ export const paymentsApi = {
     currency: string;
     provider: PaymentProvider;
     description?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }): Promise<ApiResponse<{ clientSecret: string; paymentId: string }>> {
     return apiClient.post('/payments/create', params);
   },

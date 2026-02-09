@@ -100,7 +100,7 @@ export function useLocalStorage<T>(
 
     // Слушаем событие storage (между вкладками)
     window.addEventListener('storage', handleStorageChange as EventListener);
-    
+
     // Слушаем custom event (внутри одной вкладки)
     window.addEventListener('local-storage', handleStorageChange as EventListener);
 
@@ -142,7 +142,7 @@ export const clearAllStorage = (): void => {
 
     // Dispatch event для синхронизации
     window.dispatchEvent(new Event('storage'));
-    
+
     console.log('✅ All app data cleared from localStorage');
   } catch (error) {
     console.error('Error clearing localStorage:', error);
@@ -176,7 +176,7 @@ export const setStoredValue = <T,>(key: string, value: T): void => {
 
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
-    
+
     // Dispatch event для синхронизации
     window.dispatchEvent(
       new CustomEvent('local-storage', {
@@ -217,7 +217,7 @@ export const isLocalStorageAvailable = (): boolean => {
     window.localStorage.setItem(testKey, 'test');
     window.localStorage.removeItem(testKey);
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 };
@@ -290,7 +290,7 @@ export const importAppData = (data: Record<string, unknown>): void => {
 
     // Dispatch event для синхронизации
     window.dispatchEvent(new Event('storage'));
-    
+
     console.log('✅ App data imported successfully');
   } catch (error) {
     console.error('Error importing app data:', error);

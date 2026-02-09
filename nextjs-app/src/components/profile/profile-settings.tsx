@@ -20,7 +20,7 @@ import { AnimatedCard } from '@/components/ui/animated-elements';
 type ProfileSettingsProps = {
   dict: Dictionary;
   locale: Locale;
-  user: any;
+  user: import('@/types').User;
 };
 
 export function ProfileSettings({ dict, locale, user }: ProfileSettingsProps) {
@@ -103,7 +103,7 @@ export function ProfileSettings({ dict, locale, user }: ProfileSettingsProps) {
                     <h2 className="text-2xl font-bold mb-1">{name}</h2>
                     <p className="text-sm text-muted-foreground mb-3">{email}</p>
                     <Badge variant="secondary" className="mb-4">
-                      {dict.profileSettings?.plan_badge?.[user?.plan] || (user?.plan === 'pro' ? 'Pro План' : user?.plan === 'enterprise' ? 'Корпоративный' : 'Бесплатный')}
+                      {user?.plan ? (dict.profileSettings?.plan_badge?.[user.plan] || user.plan) : 'Free'}
                     </Badge>
                   </div>
                 </CardContent>

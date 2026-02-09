@@ -4,11 +4,16 @@
 
 import { config } from '../config';
 
+export interface JWTPayload {
+  exp: number;
+  [key: string]: unknown;
+}
+
 export const jwtUtils = {
   /**
    * Decode JWT token (without verification - client-side only)
    */
-  decode(token: string): any {
+  decode<T = JWTPayload>(token: string): T | null {
     try {
       const base64Url = token.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -29,7 +34,7 @@ export const jwtUtils = {
    * Check if token is expired
    */
   isExpired(token: string): boolean {
-    const decoded = this.decode(token);
+    const decoded = this.decode<{ exp: number }>(token);
     if (!decoded || !decoded.exp) return true;
 
     const currentTime = Math.floor(Date.now() / 1000);
@@ -40,7 +45,7 @@ export const jwtUtils = {
    * Get token expiry time
    */
   getExpiry(token: string): Date | null {
-    const decoded = this.decode(token);
+    const decoded = this.decode<{ exp: number }>(token);
     if (!decoded || !decoded.exp) return null;
 
     return new Date(decoded.exp * 1000);
@@ -50,7 +55,7 @@ export const jwtUtils = {
    * Get time until expiry in seconds
    */
   getTimeUntilExpiry(token: string): number {
-    const decoded = this.decode(token);
+    const decoded = this.decode<{ exp: number }>(token);
     if (!decoded || !decoded.exp) return 0;
 
     const currentTime = Math.floor(Date.now() / 1000);

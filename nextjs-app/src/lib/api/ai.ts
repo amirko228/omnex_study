@@ -101,8 +101,8 @@ export const aiApi = {
     lessonId: string;
     count: number;
     difficulty?: string;
-  }): Promise<ApiResponse<any[]>> {
-    return apiClient.post<any[]>('/ai/quiz/generate', params);
+  }): Promise<ApiResponse<import('@/types').QuizQuestion[]>> {
+    return apiClient.post<import('@/types').QuizQuestion[]>('/ai/quiz/generate', params);
   },
 
   /**
@@ -124,7 +124,7 @@ export const aiApi = {
   async getStudyRecommendations(): Promise<
     ApiResponse<{
       suggestedCourses: Course[];
-      studySchedule: any[];
+      studySchedule: import('@/types').StudyScheduleItem[];
       tips: string[];
     }>
   > {

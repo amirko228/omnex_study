@@ -29,7 +29,7 @@ type NavbarProps = {
   setLocale: (locale: Locale) => void;
   currentPage: Page;
   setCurrentPage: (page: Page) => void;
-  user?: any;
+  user?: import('@/types').User | null;
   isPublic?: boolean;
   onLogout: () => void;
 };
@@ -128,8 +128,8 @@ export function Navbar({
               <button
                 onClick={() => setCurrentPage('generate-course')}
                 className={`text-sm transition-colors hover:text-foreground flex items-center gap-1.5 ${currentPage === 'generate-course'
-                    ? 'text-foreground font-semibold'
-                    : 'text-purple-500 hover:text-purple-600'
+                  ? 'text-foreground font-semibold'
+                  : 'text-purple-500 hover:text-purple-600'
                   }`}
               >
                 <Sparkles className="h-4 w-4" />
@@ -370,8 +370,8 @@ export function Navbar({
                 <button
                   onClick={() => handleNavigate('generate-course')}
                   className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center gap-2 ${currentPage === 'generate-course'
-                      ? 'bg-purple-500/10 text-purple-500 font-semibold'
-                      : 'hover:bg-purple-500/10 text-purple-500'
+                    ? 'bg-purple-500/10 text-purple-500 font-semibold'
+                    : 'hover:bg-purple-500/10 text-purple-500'
                     }`}
                 >
                   <Sparkles className="h-4 w-4" />
