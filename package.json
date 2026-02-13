@@ -3,6 +3,7 @@
       "version": "0.1.0",
       "private": true,
       "scripts": {
+            "postinstall": "cd nextjs-app && npm install",
             "dev": "npm run dev --prefix nextjs-app",
             "build": "npm run build --prefix nextjs-app",
             "start": "npm run start --prefix nextjs-app",
