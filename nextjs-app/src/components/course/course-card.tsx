@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Star, Clock, BookOpen, Users, FileText, MessageSquare, ClipboardCheck, ListChecks } from 'lucide-react';
-import type { Course } from '@/lib/api/mock-data';
+import type { Course } from '@/types';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 import type { Locale } from '@/lib/i18n/config';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
@@ -32,8 +32,8 @@ export function CourseCard({ course, dict, locale, onClick }: CourseCardProps) {
   };
 
   return (
-    <Card 
-      className="group overflow-hidden transition-all hover:shadow-lg cursor-pointer" 
+    <Card
+      className="group overflow-hidden transition-all hover:shadow-lg cursor-pointer"
       onClick={onClick}
     >
       <CardHeader className="p-0">
@@ -60,7 +60,7 @@ export function CourseCard({ course, dict, locale, onClick }: CourseCardProps) {
           </div>
           <div className="flex items-center gap-1">
             <Users className="h-4 w-4" />
-            <span>{course.studentsCount.toLocaleString()}</span>
+            <span>{(course.studentsCount ?? 0).toLocaleString()}</span>
           </div>
           <div className="flex items-center gap-1">
             <BookOpen className="h-4 w-4" />
@@ -101,11 +101,11 @@ export function CourseCard({ course, dict, locale, onClick }: CourseCardProps) {
         )}
       </CardContent>
       <CardFooter className="p-4 pt-0">
-        <Button 
+        <Button
           onClick={(e) => {
             e.stopPropagation();
-            onClick();
-          }} 
+            onClick?.();
+          }}
           className="w-full"
         >
           {course.isEnrolled ? dict.courses.card.continue : dict.courses.card.enroll}

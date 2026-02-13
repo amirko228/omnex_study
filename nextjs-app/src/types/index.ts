@@ -16,11 +16,11 @@ export type NotificationType = 'course_update' | 'payment' | 'reminder' | 'marke
 
 export type OAuthProvider = 'google' | 'vk' | 'yandex';
 
-export type CourseFormat = 'text' | 'quiz' | 'chat' | 'assignment' | 'video';
+export type CourseFormat = 'text' | 'quiz' | 'chat' | 'assignment';
 
 export type CourseDifficulty = 'beginner' | 'intermediate' | 'advanced';
 
-export type LessonType = 'video' | 'text' | 'quiz' | 'assignment' | 'chat';
+export type LessonType = 'text' | 'quiz' | 'assignment' | 'chat';
 
 // ============================================================================
 // USER TYPES
@@ -82,12 +82,13 @@ export interface UserProfile {
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
-  expiresIn: number;
+  expiresIn?: number;
 }
 
 export interface AuthResponse {
   user: User;
-  tokens: AuthTokens;
+  token: string;
+  refreshToken: string;
 }
 
 export interface LoginCredentials {

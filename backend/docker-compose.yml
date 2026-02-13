@@ -1,0 +1,51 @@
+# Docker Compose для разработки
+# Поднимает PostgreSQL и Redis
+# Backend запускается через npm run start:dev
+
+version: '3.8'
+
+services:
+  # ==========================================
+  # PostgreSQL - Основная база данных
+  # ==========================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: omnex-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: omnex_db
+      POSTGRES_USER: omnex_user
+      POSTGRES_PASSWORD: omnex_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U omnex_user -d omnex_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
+  # Redis - Кеш, сессии, rate limiting
+  # ==========================================
+  redis:
+    image: redis:7-alpine
+    container_name: omnex-redis
+    restart: unless-stopped
+    command: redis-server --requirepass redis_password
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "redis_password", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local

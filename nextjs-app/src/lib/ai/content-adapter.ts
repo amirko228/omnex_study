@@ -1,5 +1,5 @@
 import type { CourseFormat } from '@/types';
-import type { Lesson } from '@/lib/api/mock-data';
+import type { Lesson } from '@/types';
 
 /**
  * AI Content Adapter
@@ -256,12 +256,12 @@ export async function adaptLessonContent(
  */
 export function getFormatDescription(format: CourseFormat): string {
   const descriptions = {
-    text: 'Подробные текстовые материалы с примерами и схемами',
+    text: 'Структурированные текстовые материалы с примерами',
     quiz: 'Интерактивные тесты для проверки знаний',
     chat: 'Персональный AI наставник для диалогового обучения',
     assignment: 'Практические задания с AI проверкой решений',
   };
-  return descriptions[format];
+  return descriptions[format] || 'Unknown format';
 }
 
 /**
@@ -274,5 +274,5 @@ export function getFormatIcon(format: CourseFormat): string {
     chat: '💬',
     assignment: '📋',
   };
-  return icons[format];
+  return icons[format] || '📚';
 }

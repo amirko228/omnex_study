@@ -64,7 +64,7 @@ export const paymentsApi = {
    * Validate promo code
    */
   async validatePromoCode(code: string): Promise<ApiResponse<PromoCode>> {
-    return apiClient.post<PromoCode>('/promo-codes/validate', { code });
+    return apiClient.post<PromoCode>('/payments/promo-codes/validate', { code });
   },
 
   /**

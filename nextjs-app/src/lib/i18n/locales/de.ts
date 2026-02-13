@@ -798,18 +798,44 @@ export const de = {
     contact_email: "privacy@ailearning.com"
   },
   landingBlog: {
-    title: "Artikel und Ratschläge von Experten",
-    subtitle: "Aktuelle Materialien über Technologie, Lernen und Karriere",
+    title: "Expertenartikel und Tipps",
+    subtitle: "Aktuelle Materialien zu Technologie, Lernen und Karriere",
     badge: "Blog",
     read_all: "Alle Artikel lesen",
     article1_title: "KI-Revolution in der Bildung",
     article1_excerpt: "Wie maschinelles Lernen die Art und Weise verändert, wie wir lernen",
     article1_category: "KI",
-    article2_title: "10 moderne JavaScript-Features",
     article2_excerpt: "Die jeder Entwickler 2025 kennen sollte",
     article2_category: "Programmierung",
     article3_title: "IT-Karriere 2025",
     article3_excerpt: "Welche Fähigkeiten gefragt sind und wie man sie erwirbt",
     article3_category: "Karriere"
+  },
+  aiCreator: {
+    title: "Was möchten Sie heute lernen?",
+    subtitle: "Ich kann in Sekundenschnelle einen personalisierten Kurs für Sie erstellen. Beschreiben Sie einfach das Thema.",
+    inputPlaceholder: "Beschreiben Sie den Kurs, den Sie erstellen möchten...",
+    suggestions: {
+      python: { label: "Python Grundlagen", text: "Erstelle einen Python-Kurs für Anfänger" },
+      web: { label: "Webentwicklung", text: "Bring mir Full-Stack-Webentwicklung bei" },
+      design: { label: "UI/UX Design", text: "Kurs über moderne UI/UX-Designprinzipien" },
+      marketing: { label: "Marketing", text: "Kurs über digitale Marketingstrategien" }
+    },
+    steps: {
+      analyzing: "Thema und Struktur analysieren...",
+      curriculum: "Lehrplan generieren...",
+      materials: "Lektionsmaterialien erstellen...",
+      practical: "Praktische Übungen vorbereiten..."
+    },
+    generating: "Beginne mit dem Erstellen Ihres Kurses...",
+    courseReady: "{title}",
+    startLearning: "Lernen starten",
+    preview: {
+      draft: "KI-Kursentwurf",
+      level: "Niveau",
+      duration: "Dauer",
+      processing: "KI-Verarbeitung"
+    },
+    disclaimer: "KI-generierte Inhalte können ungenau sein."
   }
 } as const;

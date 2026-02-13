@@ -11,21 +11,20 @@ export interface NotificationSettings {
 export interface UserPreferences {
   // Настройки уведомлений
   notifications: NotificationSettings;
-  
+
   // Настройки отображения
   compactMode: boolean;
   showProgressBar: boolean;
-  autoplayVideos: boolean;
-  
+
   // Настройки обучения
   dailyGoalMinutes: number;
   preferredStudyTime: 'morning' | 'afternoon' | 'evening' | 'night' | null;
-  
+
   // Настройки доступности
   fontSize: 'small' | 'medium' | 'large';
   reducedMotion: boolean;
   highContrast: boolean;
-  
+
   // Другое
   cookiesAccepted: boolean;
   lastSeenWhatsNew?: string;
@@ -41,7 +40,6 @@ const defaultPreferences: UserPreferences = {
   },
   compactMode: false,
   showProgressBar: true,
-  autoplayVideos: false,
   dailyGoalMinutes: 30,
   preferredStudyTime: null,
   fontSize: 'medium',

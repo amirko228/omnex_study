@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, ChevronLeft, ChevronRight, Clock, FileText, ListChecks, MessageSquare, ClipboardCheck, Loader2, Sparkles } from 'lucide-react';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
-import type { Lesson } from '@/lib/api/mock-data';
+import type { Lesson } from '@/types';
 import type { CourseFormat } from '@/types';
 import { adaptLessonContent, type AdaptedContent } from '@/lib/ai/content-adapter';
 import { toast } from 'sonner';
@@ -35,7 +35,7 @@ export function LessonView({
   currentFormat = 'text',
   onFormatChange,
 }: LessonViewProps) {
-  const [isCompleted, setIsCompleted] = useState(lesson.completed || false);
+  const [isCompleted, setIsCompleted] = useState(lesson.isCompleted || false);
   const [adaptedContent, setAdaptedContent] = useState<AdaptedContent | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -331,11 +331,6 @@ export function LessonView({
           ) : (
             // Fallback to original content
             <div>
-              {lesson.type === 'video' && (
-                <div className="aspect-video rounded-lg bg-muted flex items-center justify-center">
-                  <p className="text-muted-foreground">Video Player Placeholder</p>
-                </div>
-              )}
               {lesson.type === 'text' && (
                 <div className="prose dark:prose-invert max-w-none">
                   <p>

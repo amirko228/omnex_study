@@ -38,10 +38,13 @@ export function useAuth() {
             return response.data;
         },
         onSuccess: (data) => {
-            if (data?.tokens?.accessToken) {
-                apiClient.setToken(data.tokens.accessToken);
+            if (data?.token) {
+                apiClient.setToken(data.token);
+                if (data.refreshToken && typeof window !== 'undefined') {
+                    localStorage.setItem('refresh_token', data.refreshToken);
+                }
                 queryClient.invalidateQueries({ queryKey: ['auth-user'] });
-                toast.success('Successfully logged in');
+                toast.success('Успешный вход');
                 router.push('/dashboard');
             }
         },
@@ -53,17 +56,22 @@ export function useAuth() {
     // Register mutation
     const registerMutation = useMutation({
         mutationFn: async (data: import('@/types').RegisterDTO) => {
-            const response = await authApi.register(data);
+            // Strip fields not accepted by backend DTO
+            const { email, password, name, locale } = data as import('@/types').RegisterDTO & { confirmPassword?: string };
+            const response = await authApi.register({ email, password, name, locale });
             if (!response.success) {
                 throw new Error(response.error?.message || 'Registration failed');
             }
             return response.data;
         },
         onSuccess: (data) => {
-            if (data?.tokens?.accessToken) {
-                apiClient.setToken(data.tokens.accessToken);
+            if (data?.token) {
+                apiClient.setToken(data.token);
+                if (data.refreshToken && typeof window !== 'undefined') {
+                    localStorage.setItem('refresh_token', data.refreshToken);
+                }
                 queryClient.invalidateQueries({ queryKey: ['auth-user'] });
-                toast.success('Account created successfully');
+                toast.success('Аккаунт создан');
                 router.push('/dashboard');
             }
         },

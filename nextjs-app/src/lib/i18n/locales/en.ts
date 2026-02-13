@@ -176,10 +176,25 @@ export const en = {
     },
     forgot: {
       title: "Reset Password",
-      subtitle: "Enter your email to receive reset instructions",
+      subtitle: "Enter your email to receive a reset code",
       email: "Email",
-      submit: "Send Reset Link",
-      back: "Back to login"
+      submit: "Send Code",
+      back: "Back to login",
+      code_sent: "Code sent!",
+      check_email: "We've sent a password reset code to",
+      enter_code: "Enter the code from your email",
+      code: "Verification code",
+      new_password: "New password",
+      confirm_reset: "Reset password",
+      sending: "Sending...",
+      resetting: "Resetting...",
+      success: "Password changed successfully!",
+      success_desc: "You can now log in with your new password",
+      check_spam: "If you don't see the email, check your spam folder",
+      enter_email: "Please enter your email",
+      fill_all_fields: "Please fill in all fields",
+      min_password: "Password must be at least 8 characters",
+      error: "Password reset error"
     }
   },
   dashboard: {
@@ -822,5 +837,39 @@ export const en = {
     article3_title: "IT Career 2025",
     article3_excerpt: "What skills are in demand and how to get them",
     article3_category: "Career"
+  },
+  aiDifficulty: {
+    make_harder: "Make Harder",
+    make_easier: "Make Easier",
+    no_change: "No Change",
+    difficulty_adaptation: "Difficulty Adaptation",
+    ai_will_adapt: "AI will adapt content to your level"
+  },
+  aiCreator: {
+    title: "What do you want to learn today?",
+    subtitle: "I can create a personalized course for you in seconds. Just describe the topic.",
+    inputPlaceholder: "Describe the course you want to create...",
+    suggestions: {
+      python: { label: "Python Basics", text: "Create a Python course for beginners" },
+      web: { label: "Web Development", text: "Teach me full-stack web development" },
+      design: { label: "UI/UX Design", text: "Course about modern UI/UX design principles" },
+      marketing: { label: "Marketing", text: "Digital Marketing strategy course" }
+    },
+    steps: {
+      analyzing: "Analyzing topic and structure...",
+      curriculum: "Generating curriculum...",
+      materials: "Creating lesson materials...",
+      practical: "Preparing practical exercises..."
+    },
+    generating: "Starting to build your course...",
+    courseReady: "{title}",
+    startLearning: "Start Learning",
+    preview: {
+      draft: "AI Course Draft",
+      level: "Level",
+      duration: "Duration",
+      processing: "AI Processing"
+    },
+    disclaimer: "AI generated content can be inaccurate."
   }
 } as const;

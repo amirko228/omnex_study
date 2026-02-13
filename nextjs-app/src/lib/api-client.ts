@@ -80,98 +80,6 @@ class ApiClient {
       requestHeaders['Authorization'] = `Bearer ${token}`;
     }
 
-    // ========================================================================
-    // MOCK API IMPLEMENTATION
-    // ========================================================================
-    // Intercept requests and return mock data if no backend is available
-
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    // console.log(`[Mock API] ${method} ${endpoint}`, body || params);
-
-    try {
-      // Auth: Login
-      if (endpoint === '/auth/login') {
-        const { email } = body as { email: string };
-        // Import mock data dynamically to avoid circular dependencies if any
-        const { mockUser } = await import('@/lib/api/mock-data');
-
-        return {
-          success: true,
-          data: {
-            user: { ...mockUser, email },
-            token: 'mock_jwt_token_12345',
-            refreshToken: 'mock_refresh_token_67890'
-          } as unknown as T,
-          message: 'Successfully logged in'
-        };
-      }
-
-      // Auth: Register
-      if (endpoint === '/auth/register') {
-        const { email, name } = body as { email: string; name?: string };
-        const { mockUser } = await import('@/lib/api/mock-data');
-
-        return {
-          success: true,
-          data: {
-            user: { ...mockUser, email, name: name || mockUser.name },
-            token: 'mock_jwt_token_12345',
-            refreshToken: 'mock_refresh_token_67890'
-          } as unknown as T,
-          message: 'Registration successful'
-        };
-      }
-
-      // User: Get Current
-      if (endpoint === '/auth/me' || endpoint === '/users/me') {
-        const { mockUser } = await import('@/lib/api/mock-data');
-        return {
-          success: true,
-          data: mockUser as unknown as T
-        };
-      }
-
-      // Logout
-      if (endpoint === '/auth/logout') {
-        return {
-          success: true,
-          data: null as unknown as T,
-          message: 'Logged out successfully'
-        };
-      }
-
-      // Courses: List
-      if (endpoint === '/courses') {
-        const { mockCourses } = await import('@/lib/api/mock-data');
-        return {
-          success: true,
-          data: mockCourses as unknown as T
-        };
-      }
-
-      // Courses: Get One
-      if (endpoint.startsWith('/courses/')) {
-        const { mockCourses } = await import('@/lib/api/mock-data');
-        const courseId = endpoint.split('/').pop();
-        const course = mockCourses.find(c => c.id === courseId);
-
-        if (course) {
-          return {
-            success: true,
-            data: course as unknown as T
-          };
-        }
-      }
-    } catch (e) {
-      console.warn('[Mock API] Error in mock handler:', e);
-    }
-
-    // ========================================================================
-    // REAL API FALLBACK
-    // ========================================================================
-
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
@@ -191,9 +99,9 @@ class ApiClient {
         return {
           success: false,
           error: {
-            code: String(response.status),
-            message: data.message || 'Request failed',
-            details: data,
+            code: data.error?.code || String(response.status),
+            message: data.error?.message || data.message || 'Request failed',
+            details: data.error?.details || data,
           },
         };
       }

@@ -155,7 +155,7 @@ export function AICourseCreatorChat({
             const previewMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'ai',
-                content: getCoursePreviewText(locale, courseParams),
+                content: "Preview", // Not visible in new UI
                 timestamp: new Date(),
                 type: 'course-preview',
                 courseData: courseParams
@@ -170,7 +170,7 @@ export function AICourseCreatorChat({
 
         } else {
             try {
-                const response = await getAIResponse(userInput, locale);
+                const response = await getAIResponse(userInput, locale, dict);
                 const aiMessage: Message = {
                     id: (Date.now() + 1).toString(),
                     role: 'ai',
@@ -193,17 +193,17 @@ export function AICourseCreatorChat({
         scrollToBottom();
 
         const steps = [
-            { label: locale === 'ru' ? 'Анализ темы и структуры...' : 'Analyzing topic and structure...', status: 'loading' as const },
-            { label: locale === 'ru' ? 'Генерация учебного плана...' : 'Generating curriculum...', status: 'pending' as const },
-            { label: locale === 'ru' ? 'Создание материалов уроков...' : 'Creating lesson materials...', status: 'pending' as const },
-            { label: locale === 'ru' ? 'Подготовка практических заданий...' : 'Preparing practical exercises...', status: 'pending' as const }
+            { label: dict.aiCreator.steps.analyzing, status: 'loading' as const },
+            { label: dict.aiCreator.steps.curriculum, status: 'pending' as const },
+            { label: dict.aiCreator.steps.materials, status: 'pending' as const },
+            { label: dict.aiCreator.steps.practical, status: 'pending' as const }
         ];
 
         const generatingMessageId = (Date.now() + 2).toString();
         const generatingMessage: Message = {
             id: generatingMessageId,
             role: 'ai',
-            content: locale === 'ru' ? 'Начинаю создание вашего курса...' : 'Starting to build your course...',
+            content: dict.aiCreator.generating,
             timestamp: new Date(),
             type: 'generating',
             generationSteps: steps
@@ -258,7 +258,7 @@ export function AICourseCreatorChat({
                         return [...filtered, {
                             id: (Date.now() + 3).toString(),
                             role: 'ai',
-                            content: getCourseReadyText(locale, course.title),
+                            content: dict.aiCreator.courseReady.replace('{title}', course.title),
                             timestamp: new Date(),
                             type: 'course-ready',
                             generatedCourseId: course.id
@@ -290,10 +290,10 @@ export function AICourseCreatorChat({
     };
 
     const suggestions = [
-        { icon: <Code className="w-4 h-4" />, label: "Python Basics", text: "Create a Python course for beginners" },
-        { icon: <Globe className="w-4 h-4" />, label: "Web Development", text: "Teach me full-stack web development" },
-        { icon: <Palette className="w-4 h-4" />, label: "UI/UX Design", text: "Course about modern UI/UX design principles" },
-        { icon: <Briefcase className="w-4 h-4" />, label: "Marketing", text: "Digital Marketing strategy course" },
+        { icon: <Code className="w-4 h-4" />, label: dict.aiCreator.suggestions.python.label, text: dict.aiCreator.suggestions.python.text },
+        { icon: <Globe className="w-4 h-4" />, label: dict.aiCreator.suggestions.web.label, text: dict.aiCreator.suggestions.web.text },
+        { icon: <Palette className="w-4 h-4" />, label: dict.aiCreator.suggestions.design.label, text: dict.aiCreator.suggestions.design.text },
+        { icon: <Briefcase className="w-4 h-4" />, label: dict.aiCreator.suggestions.marketing.label, text: dict.aiCreator.suggestions.marketing.text },
     ];
 
     const emptyState = messages.length === 0;
@@ -320,12 +320,10 @@ export function AICourseCreatorChat({
                                 <Sparkles className="w-10 h-10 text-white" />
                             </div>
                             <h2 className="text-3xl md:text-4xl font-bold mb-3 tracking-tight">
-                                {locale === 'ru' ? 'Что хотите изучит сегодня?' : 'What do you want to learn today?'}
+                                {dict.aiCreator.title}
                             </h2>
                             <p className="text-lg text-muted-foreground mb-10 max-w-lg mx-auto">
-                                {locale === 'ru'
-                                    ? 'Я создам для вас персонализированный курс за считанные секунды. Просто опишите тему.'
-                                    : 'I can create a personalized course for you in seconds. Just describe the topic.'}
+                                {dict.aiCreator.subtitle}
                             </p>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl mx-auto">
@@ -370,8 +368,8 @@ export function AICourseCreatorChat({
                                 {/* Regular Text Bubble */}
                                 {message.type === 'text' && (
                                     <div className={`px-5 py-3.5 rounded-2xl shadow-sm text-sm md:text-base leading-relaxed ${message.role === 'user'
-                                            ? 'bg-primary text-primary-foreground rounded-br-none'
-                                            : 'bg-card border rounded-bl-none'
+                                        ? 'bg-primary text-primary-foreground rounded-br-none'
+                                        : 'bg-card border rounded-bl-none'
                                         }`}>
                                         {message.content}
                                     </div>
@@ -383,22 +381,22 @@ export function AICourseCreatorChat({
                                         <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/10 dark:to-pink-900/10 p-4 border-b">
                                             <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-medium text-sm mb-1">
                                                 <Sparkles className="w-4 h-4" />
-                                                <span>AI Course Draft</span>
+                                                <span>{dict.aiCreator.preview.draft}</span>
                                             </div>
                                             <h3 className="font-bold text-lg">{message.courseData.topic}</h3>
                                         </div>
                                         <div className="p-4 space-y-3">
                                             <div className="flex justify-between items-center text-sm">
-                                                <span className="text-muted-foreground flex items-center gap-2"><GraduationCap className="w-4 h-4" /> Level</span>
+                                                <span className="text-muted-foreground flex items-center gap-2"><GraduationCap className="w-4 h-4" /> {dict.aiCreator.preview.level}</span>
                                                 <Badge variant="secondary">{message.courseData.level}</Badge>
                                             </div>
                                             <div className="flex justify-between items-center text-sm">
-                                                <span className="text-muted-foreground flex items-center gap-2"><Clock className="w-4 h-4" /> Duration</span>
-                                                <span>~{message.courseData.duration} hours</span>
+                                                <span className="text-muted-foreground flex items-center gap-2"><Clock className="w-4 h-4" /> {dict.aiCreator.preview.duration}</span>
+                                                <span>~{message.courseData.duration} {dict.card?.hours || 'hours'}</span>
                                             </div>
                                             <div className="pt-2">
                                                 <div className="text-xs text-muted-foreground mb-2 flex items-center gap-2">
-                                                    <Cpu className="w-3 h-3" /> AI Processing
+                                                    <Cpu className="w-3 h-3" /> {dict.aiCreator.preview.processing}
                                                 </div>
                                                 <div className="h-1 bg-secondary rounded-full overflow-hidden w-full">
                                                     <motion.div
@@ -424,16 +422,16 @@ export function AICourseCreatorChat({
                                             {message.generationSteps.map((step, idx) => (
                                                 <div key={idx} className="flex items-center gap-3">
                                                     <div className={`w-6 h-6 rounded-full flex items-center justify-center border transition-colors duration-300 ${step.status === 'completed' ? 'bg-green-500 border-green-500 text-white' :
-                                                            step.status === 'loading' ? 'border-purple-500 text-purple-500 bg-purple-50 dark:bg-purple-900/20' :
-                                                                'border-muted-foreground/30 text-muted-foreground'
+                                                        step.status === 'loading' ? 'border-purple-500 text-purple-500 bg-purple-50 dark:bg-purple-900/20' :
+                                                            'border-muted-foreground/30 text-muted-foreground'
                                                         }`}>
                                                         {step.status === 'completed' && <CheckCircle2 className="w-3.5 h-3.5" />}
                                                         {step.status === 'loading' && <div className="w-2 h-2 bg-current rounded-full animate-ping" />}
                                                         {step.status === 'pending' && <div className="w-2 h-2 bg-current rounded-full opacity-20" />}
                                                     </div>
                                                     <span className={`text-sm transition-colors duration-300 ${step.status === 'loading' ? 'text-foreground font-medium' :
-                                                            step.status === 'completed' ? 'text-muted-foreground line-through opacity-70' :
-                                                                'text-muted-foreground'
+                                                        step.status === 'completed' ? 'text-muted-foreground line-through opacity-70' :
+                                                            'text-muted-foreground'
                                                         }`}>
                                                         {step.label}
                                                     </span>
@@ -458,7 +456,7 @@ export function AICourseCreatorChat({
                                                 onClick={() => message.generatedCourseId && handleOpenCourse(message.generatedCourseId)}
                                                 className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg shadow-green-500/20 h-11 text-base"
                                             >
-                                                {locale === 'ru' ? 'Начать обучение' : 'Start Learning'}
+                                                {dict.aiCreator.courseReady.replace('{title}', '')}
                                                 <ArrowRight className="w-4 h-4 ml-2" />
                                             </Button>
                                         </div>
@@ -496,7 +494,7 @@ export function AICourseCreatorChat({
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyPress={handleKeyPress}
-                        placeholder={locale === 'ru' ? 'Опишите курс, который хотите создать...' : 'Describe the course you want to create...'}
+                        placeholder={dict.aiCreator.inputPlaceholder}
                         disabled={isLoading || isGenerating}
                         className="flex-1 border-none bg-transparent h-14 px-5 text-base focus-visible:ring-0 placeholder:text-muted-foreground/50"
                     />
@@ -506,8 +504,8 @@ export function AICourseCreatorChat({
                             onClick={() => handleSend()}
                             disabled={!input.trim() || isLoading || isGenerating}
                             className={`h-10 w-10 rounded-xl transition-all duration-300 ${input.trim()
-                                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md shadow-purple-500/20 hover:scale-105'
-                                    : 'bg-secondary text-muted-foreground'
+                                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md shadow-purple-500/20 hover:scale-105'
+                                : 'bg-secondary text-muted-foreground'
                                 }`}
                         >
                             {isLoading ? (
@@ -519,7 +517,7 @@ export function AICourseCreatorChat({
                     </div>
                 </div>
                 <p className="text-center text-xs text-muted-foreground mt-3">
-                    AI generated content can be inaccurate.
+                    {dict.aiCreator.disclaimer}
                 </p>
             </div>
         </div>
@@ -533,10 +531,11 @@ function getCoursePreviewText(locale: Locale, params: { topic: string; level: Di
 }
 
 function getCourseReadyText(locale: Locale, title: string): string {
-    return locale === 'ru' ? title : title;
+    return title;
 }
 
-async function getAIResponse(input: string, locale: Locale): Promise<string> {
+// Updated to use dict for responses
+async function getAIResponse(input: string, locale: Locale, dict: Dictionary): Promise<string> {
     const lowerInput = input.toLowerCase();
 
     if (lowerInput.includes('hello') || lowerInput.includes('hi') || lowerInput.includes('привет')) {
@@ -546,6 +545,6 @@ async function getAIResponse(input: string, locale: Locale): Promise<string> {
     }
 
     return locale === 'ru'
-        ? 'Я специализируюсь на создани курсов. Попробуйте сказать "Создай курс по..." и укажите тему.'
+        ? 'Я специализируюсь на создании курсов. Попробуйте сказать "Создай курс по..." и укажите тему.'
         : 'I specialize in creating courses. Try saying "Create a course about..." and specify a topic.';
 }

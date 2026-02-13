@@ -10,14 +10,14 @@ export const usersApi = {
    * Get user profile
    */
   async getProfile(): Promise<ApiResponse<UserProfile>> {
-    return apiClient.get<UserProfile>('/users/profile');
+    return apiClient.get<UserProfile>('/users/me');
   },
 
   /**
    * Update profile
    */
   async updateProfile(data: Partial<UserProfile>): Promise<ApiResponse<UserProfile>> {
-    return apiClient.patch<UserProfile>('/users/profile', data);
+    return apiClient.patch<UserProfile>('/users/me', data);
   },
 
   /**
@@ -27,21 +27,21 @@ export const usersApi = {
     locale?: string;
     timezone?: string;
   }): Promise<ApiResponse<User>> {
-    return apiClient.patch<User>('/users/settings', data);
+    return apiClient.patch<User>('/users/me/settings', data);
   },
 
   /**
    * Upload avatar
    */
   async uploadAvatar(file: File): Promise<ApiResponse<{ avatarUrl: string }>> {
-    return apiClient.upload<{ avatarUrl: string }>('/users/avatar', file);
+    return apiClient.upload<{ avatarUrl: string }>('/users/me/avatar', file);
   },
 
   /**
    * Delete avatar
    */
   async deleteAvatar(): Promise<ApiResponse<void>> {
-    return apiClient.delete<void>('/users/avatar');
+    return apiClient.delete<void>('/users/me/avatar');
   },
 
   /**
@@ -57,14 +57,14 @@ export const usersApi = {
       achievements: import('@/types').Achievement[];
     }>
   > {
-    return apiClient.get('/users/statistics');
+    return apiClient.get('/users/me/statistics');
   },
 
   /**
    * Get user achievements
    */
   async getAchievements(): Promise<ApiResponse<import('@/types').Achievement[]>> {
-    return apiClient.get('/users/achievements');
+    return apiClient.get('/users/me/achievements');
   },
 
   /**
@@ -77,20 +77,21 @@ export const usersApi = {
       points: number;
     }>
   > {
-    return apiClient.get('/users/leaderboard/position');
+    return apiClient.get('/users/me/leaderboard');
   },
 
   /**
    * Delete account
    */
   async deleteAccount(password: string): Promise<ApiResponse<void>> {
-    return apiClient.post<void>('/users/delete', { password });
+    return apiClient.delete<void>('/users/me');
   },
 
   /**
    * Export user data
    */
   async exportData(): Promise<ApiResponse<Blob>> {
-    return apiClient.get('/users/export');
+    return apiClient.get('/users/me/export');
   },
 };
+

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { FadeIn, SlideIn } from '@/components/ui/page-transition';
 import { Button } from '@/components/ui/button';
@@ -176,9 +177,9 @@ export function HeroSection({ dict, onNavigate, isAuthenticated, handleCTAClick 
 }
 
 function ParticleEffects() {
-    const [mounted, setMounted] = import('react').useState(false);
+    const [mounted, setMounted] = useState(false);
 
-    import('react').useEffect(() => {
+    useEffect(() => {
         setMounted(true);
     }, []);
 

@@ -787,5 +787,32 @@ export const fr = {
     article3_title: "Carrière en IT 2025",
     article3_excerpt: "Quelles compétences sont demandées et comment les obtenir",
     article3_category: "Carrière"
+  },
+  aiCreator: {
+    title: "Que voulez-vous apprendre aujourd'hui ?",
+    subtitle: "Je peux créer un cours personnalisé pour vous en quelques secondes. Décrivez simplement le sujet.",
+    inputPlaceholder: "Décrivez le cours que vous souhaitez créer...",
+    suggestions: {
+      python: { label: "Bases de Python", text: "Créer un cours Python pour débutants" },
+      web: { label: "Développement Web", text: "Apprends-moi le développement web full-stack" },
+      design: { label: "Design UI/UX", text: "Cours sur les principes modernes de design UI/UX" },
+      marketing: { label: "Marketing", text: "Cours sur la stratégie de marketing numérique" }
+    },
+    steps: {
+      analyzing: "Analyse du sujet et de la structure...",
+      curriculum: "Génération du programme...",
+      materials: "Création des supports de cours...",
+      practical: "Préparation des exercices pratiques..."
+    },
+    generating: "Commencement de la création de votre cours...",
+    courseReady: "{title}",
+    startLearning: "Commencer à apprendre",
+    preview: {
+      draft: "Brouillon de cours IA",
+      level: "Niveau",
+      duration: "Durée",
+      processing: "Traitement IA"
+    },
+    disclaimer: "Le contenu généré par l'IA peut être inexact."
   }
 } as const;

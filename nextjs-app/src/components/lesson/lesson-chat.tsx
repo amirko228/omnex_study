@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Send, Bot, User } from 'lucide-react';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
-import type { ChatMessage } from '@/lib/api/mock-data';
+import type { AIChatMessage as ChatMessage } from '@/types';
 
 type LessonChatProps = {
   dict: Dictionary;
@@ -20,13 +20,13 @@ export function LessonChat({ dict, initialMessages = [] }: LessonChatProps) {
     initialMessages.length > 0
       ? initialMessages
       : [
-          {
-            id: '1',
-            role: 'assistant',
-            content: dict.lesson.chat.placeholder,
-            timestamp: new Date().toISOString(),
-          },
-        ]
+        {
+          id: '1',
+          role: 'assistant',
+          content: dict.lesson.chat.placeholder,
+          timestamp: new Date().toISOString(),
+        },
+      ]
   );
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -82,11 +82,10 @@ export function LessonChat({ dict, initialMessages = [] }: LessonChatProps) {
                   </Avatar>
                 )}
                 <div
-                  className={`rounded-lg px-4 py-2 max-w-[80%] ${
-                    message.role === 'user'
+                  className={`rounded-lg px-4 py-2 max-w-[80%] ${message.role === 'user'
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-muted'
-                  }`}
+                    }`}
                 >
                   <p className="text-sm">{message.content}</p>
                 </div>

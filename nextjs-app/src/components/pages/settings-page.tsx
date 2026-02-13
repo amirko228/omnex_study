@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'motion/react';
+import { apiClient } from '@/lib/api-client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,18 +42,45 @@ export function SettingsPage({ dict, locale, user, onDeleteAccount, onLocaleChan
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword) {
+      toast.error('Заполните оба поля пароля');
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error('Новый пароль должен быть минимум 8 символов');
+      return;
+    }
+
     setIsChangingPassword(true);
-    // Simulate password change
-    setTimeout(() => {
+    try {
+      const result = await apiClient.post('/auth/change-password', { currentPassword, newPassword });
+
+      if (result.success) {
+        toast.success(dict.toasts.password_changed);
+        setCurrentPassword('');
+        setNewPassword('');
+      } else {
+        toast.error(result.error?.message || 'Ошибка смены пароля');
+      }
+    } catch (err) {
+      toast.error('Ошибка смены пароля');
+    } finally {
       setIsChangingPassword(false);
-      toast.success(dict.toasts.password_changed);
-    }, 1500);
+    }
   };
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
+    try {
+      await apiClient.delete('/users/me');
+    } catch (err) {
+      // продолжаем удаление
+    }
     toast.error(dict.toasts.account_deleted);
+    apiClient.removeToken();
     if (onDeleteAccount) {
       setTimeout(onDeleteAccount, 2000);
     }
@@ -267,17 +295,32 @@ export function SettingsPage({ dict, locale, user, onDeleteAccount, onLocaleChan
               {/* Change Password */}
               <div>
                 <Label className="mb-2 block">{dict.settings.change_password}</Label>
-                <div className="flex gap-3">
-                  <Input type="password" placeholder={dict.settings?.new_password_placeholder || 'Новый пароль'} className="flex-1" />
-                  <Button
-                    variant="outline"
-                    onClick={handleChangePassword}
-                    disabled={isChangingPassword}
-                    className="gap-2"
-                  >
-                    <Key className="h-4 w-4" />
-                    {isChangingPassword ? (dict.settings?.changing || 'Изменение...') : (dict.settings?.change || 'Изменить')}
-                  </Button>
+                <div className="space-y-3">
+                  <Input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder={'Текущий пароль'}
+                    className="flex-1"
+                  />
+                  <div className="flex gap-3">
+                    <Input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder={dict.settings?.new_password_placeholder || 'Новый пароль'}
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={handleChangePassword}
+                      disabled={isChangingPassword}
+                      className="gap-2"
+                    >
+                      <Key className="h-4 w-4" />
+                      {isChangingPassword ? (dict.settings?.changing || 'Изменение...') : (dict.settings?.change || 'Изменить')}
+                    </Button>
+                  </div>
                 </div>
                 <p className="text-sm text-muted-foreground mt-2">
                   {dict.settings?.password_hint || 'Используйте надежный пароль из минимум 8 символов'}

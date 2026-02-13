@@ -16,7 +16,7 @@ import {
   ShoppingCart,
   CheckCircle2
 } from 'lucide-react';
-import { Course } from '@/lib/api/mock-data';
+import type { Course } from '@/types';
 import { toast } from 'sonner';
 import { FadeIn, StaggerContainer, SlideIn } from '@/components/ui/page-transition';
 import { DictionaryFallback } from '@/components/ui/dictionary-fallback';

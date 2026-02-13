@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
+import { apiClient } from '@/lib/api-client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,39 +24,105 @@ type ProfileSettingsProps = {
   user: import('@/types').User | null;
 };
 
+interface UserStats {
+  coursesCompleted: number;
+  lessonsCompleted: number;
+  totalTimeSpent: number;
+  averageScore: number;
+  streak: number;
+}
+
 export function ProfileSettings({ dict, locale, user }: ProfileSettingsProps) {
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [bio, setBio] = useState(dict.profileSettings?.default_bio || 'Увлеченный студент, изучающий новые технологии и совершенствующий свои навыки в области программирования и ИИ.');
+  const [bio, setBio] = useState(user?.bio || '');
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar || '');
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSave = () => {
+  const [stats, setStats] = useState<UserStats>({
+    coursesCompleted: 0,
+    lessonsCompleted: 0,
+    totalTimeSpent: 0,
+    averageScore: 0,
+    streak: 0,
+  });
+
+  // Загрузка профиля из API (чтобы получить bio из БД)
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const result = await apiClient.get<any>('/users/me');
+        if (result.success && result.data) {
+          if (result.data.bio) setBio(result.data.bio);
+          if (result.data.name) setName(result.data.name);
+          if (result.data.avatar) setAvatarUrl(result.data.avatar);
+        }
+      } catch (err) {
+        // fallback на данные из пропсов
+      }
+    };
+    if (user) fetchProfile();
+  }, [user]);
+
+  // Загрузка статистики из API
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const result = await apiClient.get<UserStats>('/users/me/statistics');
+        if (result.success && result.data) {
+          setStats(result.data);
+        }
+      } catch (err) {
+        // Оставляем нули
+      }
+    };
+    if (user) fetchStats();
+  }, [user]);
+
+  // Реальное сохранение профиля через API
+  const handleSave = async () => {
     setIsSaving(true);
-    // Simulate save
-    setTimeout(() => {
+    try {
+      const result = await apiClient.patch('/users/me', { name, bio });
+
+      if (result.success) {
+        toast.success(dict.profile.profile_updated);
+      } else {
+        toast.error(result.error?.message || 'Ошибка сохранения профиля');
+      }
+    } catch (err) {
+      toast.error('Ошибка сохранения профиля');
+    } finally {
       setIsSaving(false);
-      toast.success(dict.profile.profile_updated);
-    }, 1000);
+    }
   };
 
   const handleAvatarChange = () => {
-    // Simulate file upload
     toast.info(dict.profileSettings.choose_image);
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Реальная загрузка аватара через API
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // Simulate upload
-      toast.success(dict.profileSettings?.avatar_updated || 'Фото профиля обновлено!');
-      // In real app, upload to server and get URL
-      const fakeUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${Date.now()}`;
-      setAvatarUrl(fakeUrl);
+    if (!file) return;
+
+    try {
+      const result = await apiClient.upload<{ avatarUrl: string }>('/users/me/avatar', file);
+
+      if (result.success && result.data) {
+        setAvatarUrl(result.data.avatarUrl || '');
+        toast.success(dict.profileSettings?.avatar_updated || 'Фото профиля обновлено!');
+      } else {
+        toast.error(result.error?.message || 'Ошибка загрузки аватара');
+      }
+    } catch (err) {
+      toast.error('Ошибка загрузки аватара');
     }
   };
+
+  const hoursLearned = Math.round(stats.totalTimeSpent / 60);
 
   return (
     <div className="container mx-auto px-4 py-10 max-w-5xl">
@@ -126,7 +193,7 @@ export function ProfileSettings({ dict, locale, user }: ProfileSettingsProps) {
                         <BookOpen className="h-4 w-4 text-primary" />
                       </div>
                       <div>
-                        <div className="text-2xl font-bold">5</div>
+                        <div className="text-2xl font-bold">{stats.coursesCompleted}</div>
                         <div className="text-xs text-muted-foreground">{dict.profileSettings?.stats_courses || 'Курсов'}</div>
                       </div>
                     </div>
@@ -141,7 +208,7 @@ export function ProfileSettings({ dict, locale, user }: ProfileSettingsProps) {
                         <TrendingUp className="h-4 w-4 text-blue-500" />
                       </div>
                       <div>
-                        <div className="text-2xl font-bold">124</div>
+                        <div className="text-2xl font-bold">{hoursLearned}</div>
                         <div className="text-xs text-muted-foreground">{dict.profileSettings?.stats_hours || 'Часов'}</div>
                       </div>
                     </div>
@@ -156,7 +223,7 @@ export function ProfileSettings({ dict, locale, user }: ProfileSettingsProps) {
                         <Award className="h-4 w-4 text-green-500" />
                       </div>
                       <div>
-                        <div className="text-2xl font-bold">3</div>
+                        <div className="text-2xl font-bold">{stats.lessonsCompleted}</div>
                         <div className="text-xs text-muted-foreground">{dict.profileSettings?.stats_certificates || 'Сертификатов'}</div>
                       </div>
                     </div>
@@ -233,9 +300,9 @@ export function ProfileSettings({ dict, locale, user }: ProfileSettingsProps) {
                     id="email"
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    disabled
                     placeholder="your@email.com"
-                    className="h-11"
+                    className="h-11 opacity-60"
                   />
                   <p className="text-xs text-muted-foreground">
                     {dict.profileSettings?.email_desc || 'Ваш email используется для входа и важных уведомлений'}
@@ -265,6 +332,7 @@ export function ProfileSettings({ dict, locale, user }: ProfileSettingsProps) {
                   <Button variant="outline" onClick={() => {
                     setName(user?.name || '');
                     setEmail(user?.email || '');
+                    setBio('');
                     toast.info(dict.profileSettings?.changes_cancelled || 'Изменения отменены');
                   }}>
                     {dict.profileSettings?.cancel || 'Отмена'}

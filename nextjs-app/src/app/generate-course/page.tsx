@@ -3,6 +3,7 @@
 import { useAppContext } from '../providers';
 import { AICourseCreatorChat } from '@/components/ai/ai-course-creator-chat';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'motion/react';
 import { ChevronLeft } from 'lucide-react';
@@ -10,6 +11,13 @@ import { ChevronLeft } from 'lucide-react';
 export default function GenerateCoursePage() {
     const { dict, locale, subscription, isAuthenticated } = useAppContext();
     const router = useRouter();
+
+    // Hooks must be called before any conditional returns
+    useEffect(() => {
+        if (!isAuthenticated) {
+            router.push('/login');
+        }
+    }, [isAuthenticated, router]);
 
     if (!dict) {
         return (
@@ -19,9 +27,7 @@ export default function GenerateCoursePage() {
         );
     }
 
-    // Если пользователь не авторизован
     if (!isAuthenticated) {
-        router.push('/login');
         return null;
     }
 

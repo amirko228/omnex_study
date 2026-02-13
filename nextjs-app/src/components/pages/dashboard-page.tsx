@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Clock, Award, TrendingUp, Search, Sparkles } from 'lucide-react';
@@ -7,6 +8,7 @@ import { motion } from 'motion/react';
 import { PageTransition, FadeIn, StaggerContainer, StaggerItem, SlideIn } from '@/components/ui/page-transition';
 import { AnimatedCard } from '@/components/ui/animated-elements';
 import { DictionaryFallback } from '@/components/ui/dictionary-fallback';
+import { apiClient } from '@/lib/api-client';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 
 import type { User } from '@/types';
@@ -17,11 +19,44 @@ interface DashboardPageProps {
     setCurrentPage: (page: string) => void;
 }
 
+interface UserStats {
+    coursesCompleted: number;
+    lessonsCompleted: number;
+    totalTimeSpent: number;
+    averageScore: number;
+    streak: number;
+}
+
 export const DashboardPage = ({ dict, user, setCurrentPage }: DashboardPageProps) => {
+    const [stats, setStats] = useState<UserStats>({
+        coursesCompleted: 0,
+        lessonsCompleted: 0,
+        totalTimeSpent: 0,
+        averageScore: 0,
+        streak: 0,
+    });
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const result = await apiClient.get<UserStats>('/users/me/statistics');
+                if (result.success && result.data) {
+                    setStats(result.data);
+                }
+            } catch (err) {
+                // Если API недоступен — оставляем нули
+            }
+        };
+
+        if (user) fetchStats();
+    }, [user]);
+
     // Null-safety проверка словаря
     if (!dict?.dashboard) {
         return <DictionaryFallback />;
     }
+
+    const hoursLearned = Math.round(stats.totalTimeSpent / 60);
 
     return (
         <PageTransition>
@@ -52,7 +87,7 @@ export const DashboardPage = ({ dict, user, setCurrentPage }: DashboardPageProps
                                         transition={{ type: "spring", delay: 0.2 }}
                                         className="text-4xl font-bold"
                                     >
-                                        5
+                                        {stats.coursesCompleted}
                                     </motion.div>
                                 </CardContent>
                             </AnimatedCard>
@@ -73,7 +108,7 @@ export const DashboardPage = ({ dict, user, setCurrentPage }: DashboardPageProps
                                         transition={{ type: "spring", delay: 0.3 }}
                                         className="text-4xl font-bold"
                                     >
-                                        124
+                                        {hoursLearned}
                                     </motion.div>
                                 </CardContent>
                             </AnimatedCard>
@@ -94,7 +129,7 @@ export const DashboardPage = ({ dict, user, setCurrentPage }: DashboardPageProps
                                         transition={{ type: "spring", delay: 0.4 }}
                                         className="text-4xl font-bold"
                                     >
-                                        3
+                                        {stats.lessonsCompleted}
                                     </motion.div>
                                 </CardContent>
                             </AnimatedCard>
@@ -115,7 +150,7 @@ export const DashboardPage = ({ dict, user, setCurrentPage }: DashboardPageProps
                                         transition={{ type: "spring", delay: 0.5 }}
                                         className="text-4xl font-bold"
                                     >
-                                        12
+                                        {stats.streak}
                                     </motion.div>
                                 </CardContent>
                             </AnimatedCard>
@@ -157,3 +192,4 @@ export const DashboardPage = ({ dict, user, setCurrentPage }: DashboardPageProps
         </PageTransition>
     );
 };
+

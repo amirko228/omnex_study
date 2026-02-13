@@ -5,10 +5,10 @@ import { motion } from 'motion/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  FileText, 
-  ListChecks, 
-  MessageSquare, 
+import {
+  FileText,
+  ListChecks,
+  MessageSquare,
   ClipboardCheck,
   Check,
   ArrowRight,
@@ -105,17 +105,16 @@ export function FormatSelection({ dict, courseTitle, onSelectFormat, onBack }: F
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card 
-                className={`cursor-pointer transition-all hover:shadow-xl ${
-                  isSelected 
-                    ? 'border-2 border-primary ring-4 ring-primary/20 md:scale-105' 
-                    : 'border-2 border-transparent hover:border-primary/50'
-                }`}
+              <Card
+                className={`cursor-pointer transition-all hover:shadow-xl ${isSelected
+                  ? 'border-2 border-primary ring-4 ring-primary/20 md:scale-105'
+                  : 'border-2 border-transparent hover:border-primary/50'
+                  }`}
                 onClick={() => handleSelectFormat(format)}
               >
                 <CardHeader className="pb-4">
                   <div className="flex items-start justify-between mb-3 md:mb-4">
-                    <motion.div 
+                    <motion.div
                       className={`h-12 w-12 md:h-14 md:w-14 rounded-xl bg-gradient-to-br ${config.color} flex items-center justify-center shrink-0`}
                       whileHover={{ scale: 1.1, rotate: 5 }}
                     >
@@ -140,15 +139,15 @@ export function FormatSelection({ dict, courseTitle, onSelectFormat, onBack }: F
                 </CardHeader>
                 <CardContent className="pt-0">
                   <ul className="space-y-2 md:space-y-3 mb-4 md:mb-6">
-                    {config.features.map((feature, i) => (
+                    {config.features.map((feature: string, i: number) => (
                       <li key={i} className="flex items-start gap-2">
                         <Check className={`h-4 w-4 ${config.iconColor} shrink-0 mt-0.5`} />
                         <span className="text-xs md:text-sm text-muted-foreground leading-relaxed">{feature}</span>
                       </li>
                     ))}
                   </ul>
-                  <Button 
-                    className="w-full h-10 md:h-11 text-sm md:text-base" 
+                  <Button
+                    className="w-full h-10 md:h-11 text-sm md:text-base"
                     variant={isSelected ? 'default' : 'outline'}
                     onClick={(e) => {
                       e.stopPropagation();
