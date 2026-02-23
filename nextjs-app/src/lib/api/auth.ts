@@ -3,12 +3,12 @@
 // ============================================================================
 
 import { apiClient } from '../api-client';
-import type { 
-  User, 
-  AuthResponse, 
+import type {
+  User,
+  AuthResponse,
   AuthTokens,
   OAuthProvider,
-  ApiResponse 
+  ApiResponse
 } from '@/types';
 
 export const authApi = {
@@ -99,11 +99,13 @@ export const authApi = {
   async oauthCallback(
     provider: OAuthProvider,
     code: string,
-    state?: string
+    state?: string,
+    redirectUri?: string
   ): Promise<ApiResponse<AuthResponse>> {
     return apiClient.post<AuthResponse>(`/auth/oauth/${provider}/callback`, {
       code,
       state,
+      redirectUri,
     });
   },
 

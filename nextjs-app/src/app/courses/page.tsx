@@ -1,14 +1,21 @@
 'use client';
 
 import { useAppContext } from '../providers';
-import { CoursesPage as CoursesPageComponent } from '@/components/pages/courses-page';
+import { CoursesPage } from '@/components/pages/courses-page';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
-export default function CoursesPage() {
-    const { dict, locale, purchasedCourses, setSelectedCourse } = useAppContext();
+export default function MyCoursesPage() {
+    const { dict, locale, purchasedCourses, setSelectedCourse, isAuthenticated, isLoading } = useAppContext();
     const router = useRouter();
 
-    if (!dict) {
+    useEffect(() => {
+        if (!isLoading && !isAuthenticated) {
+            router.push('/login');
+        }
+    }, [isAuthenticated, isLoading, router]);
+
+    if (!dict || isLoading || !isAuthenticated) {
         return (
             <div className="flex h-screen items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -21,7 +28,7 @@ export default function CoursesPage() {
     };
 
     return (
-        <CoursesPageComponent
+        <CoursesPage
             dict={dict}
             locale={locale}
             purchasedCourses={purchasedCourses}

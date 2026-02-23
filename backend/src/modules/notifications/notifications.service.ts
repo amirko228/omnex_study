@@ -6,12 +6,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { RedisService } from '../../common/redis/redis.service';
+import { EmailService } from '../../common/email/email.service';
 
 @Injectable()
 export class NotificationsService {
     constructor(
         private prisma: PrismaService,
         private redis: RedisService,
+        private emailService: EmailService,
     ) { }
 
     // Все уведомления пользователя с пагинацией
@@ -67,7 +69,9 @@ export class NotificationsService {
         await this.prisma.notification.deleteMany({ where: { userId } });
     }
 
-    // Создать уведомление (внутренний метод)
+    // ==========================================
+    // Создать уведомление + отправить email (если включено)
+    // ==========================================
     async create(userId: string, data: {
         type: string;
         title: string;
@@ -75,7 +79,8 @@ export class NotificationsService {
         channel?: string;
         data?: Record<string, unknown>;
     }) {
-        return this.prisma.notification.create({
+        // Сохраняем in-app уведомление
+        const notification = await this.prisma.notification.create({
             data: {
                 userId,
                 type: data.type,
@@ -85,6 +90,59 @@ export class NotificationsService {
                 data: data.data as any,
             },
         });
+
+        // Отправляем email если канал включает email или all
+        if (data.channel === 'email' || data.channel === 'all' || !data.channel) {
+            const prefs = await this.getPreferences(userId);
+            if (prefs.email) {
+                // Получаем email пользователя
+                const user = await this.prisma.user.findUnique({
+                    where: { id: userId },
+                    select: { email: true, name: true },
+                });
+                if (user?.email) {
+                    this.emailService.send({
+                        to: user.email,
+                        subject: `Omnex Study — ${data.title}`,
+                        html: this.emailService['wrapTemplate'](`
+                            <h2 style="color:#6366f1;margin-bottom:16px">${data.title}</h2>
+                            <p>Здравствуйте${user.name ? ', ' + user.name : ''}!</p>
+                            <p>${data.message}</p>
+                        `),
+                    }).catch(() => { /* не блокируем при ошибке email */ });
+                }
+            }
+        }
+
+        return notification;
+    }
+
+    // ==========================================
+    // Отправить email поддержки (Help Center)
+    // ==========================================
+    async sendSupportEmail(userId: string, subject: string, message: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { email: true, name: true },
+        });
+
+        if (!user) {
+            throw new NotFoundException('Пользователь не найден');
+        }
+
+        const sent = await this.emailService.sendSupportEmail(
+            user.email,
+            user.name || 'Пользователь',
+            subject,
+            message,
+        );
+
+        return {
+            success: sent,
+            message: sent
+                ? 'Обращение отправлено. Мы ответим на ваш email.'
+                : 'Email не настроен. Обращение сохранено.',
+        };
     }
 
     // ==========================================
@@ -122,7 +180,7 @@ export class NotificationsService {
     }
 
     // ==========================================
-    // Подписка на push (стаб)
+    // Подписка на push
     // ==========================================
     async subscribePush(userId: string, subscription: any) {
         await this.redis.set(`push:sub:${userId}`, JSON.stringify(subscription), 86400 * 365);
@@ -145,8 +203,7 @@ export class NotificationsService {
             type: 'reminder',
             title: 'Тестовое уведомление',
             message: 'Это тестовое уведомление для проверки системы.',
-            channel: 'in-app',
+            channel: 'all',
         });
     }
 }
-

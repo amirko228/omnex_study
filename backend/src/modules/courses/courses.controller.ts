@@ -16,6 +16,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CoursesService } from './courses.service';
+import { ReviewsService } from '../reviews/reviews.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser, Public, Roles } from '../../common/decorators';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -23,7 +24,10 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 @ApiTags('courses')
 @Controller('courses')
 export class CoursesController {
-    constructor(private coursesService: CoursesService) { }
+    constructor(
+        private coursesService: CoursesService,
+        private reviewsService: ReviewsService
+    ) { }
 
     // GET /courses — Список курсов (публичный)
     @Public()
@@ -154,5 +158,37 @@ export class CoursesController {
         @Body() body: Record<string, unknown>,
     ) {
         return this.coursesService.updateCourse(courseId, userId, body);
+    }
+
+    // ==========================================
+    // REVIEWS SUB-RESOURCES
+    // ==========================================
+
+    @Public()
+    @Get(':id/reviews')
+    @ApiOperation({ summary: 'Отзывы на курс' })
+    async getCourseReviews(
+        @Param('id') courseId: string,
+        @CurrentUser('id') userId?: string,
+        @Query('page') pageParam?: string,
+        @Query('limit') limitParam?: string,
+    ) {
+        console.log('[CoursesController] GET reviews for course:', courseId);
+        const page = pageParam ? parseInt(pageParam, 10) : 1;
+        const limit = limitParam ? parseInt(limitParam, 10) : 10;
+        return this.reviewsService.getCourseReviews(courseId, userId, page, limit);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post(':id/reviews')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Оставить отзыв' })
+    async createReview(
+        @CurrentUser('id') userId: string,
+        @Param('id') courseId: string,
+        @Body() body: { rating: number; comment?: string },
+    ) {
+        console.log('[CoursesController] POST review for course:', courseId);
+        return this.reviewsService.createReview(userId, courseId, body.rating, body.comment);
     }
 }

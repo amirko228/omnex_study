@@ -11,16 +11,18 @@ export function useAuth() {
     const router = useRouter();
 
     // Fetch current user
-    const { data: user, isLoading: isLoadingUser } = useQuery({
+    const { data: user, isLoading: isLoadingUser, refetch } = useQuery({
         queryKey: ['auth-user'],
         queryFn: async () => {
             // Don't fetch if no token
-            if (typeof window !== 'undefined' && !localStorage.getItem('auth_token')) {
+            if (typeof window !== 'undefined' &&
+                !localStorage.getItem('auth_token') &&
+                !sessionStorage.getItem('auth_token')) {
                 return null;
             }
             const response = await authApi.getCurrentUser();
             if (!response.success) {
-                throw new Error(response.error?.message);
+                return null;
             }
             return response.data;
         },
@@ -30,21 +32,18 @@ export function useAuth() {
 
     // Login mutation
     const loginMutation = useMutation({
-        mutationFn: async ({ email, password }: import('@/types').LoginCredentials) => {
+        mutationFn: async ({ email, password, rememberMe }: import('@/types').LoginCredentials) => {
             const response = await authApi.login(email, password || '');
             if (!response.success) {
                 throw new Error(response.error?.message || 'Login failed');
             }
-            return response.data;
+            return { ...response.data, rememberMe };
         },
         onSuccess: (data) => {
             if (data?.token) {
-                apiClient.setToken(data.token);
-                if (data.refreshToken && typeof window !== 'undefined') {
-                    localStorage.setItem('refresh_token', data.refreshToken);
-                }
+                apiClient.setToken(data.token, data.rememberMe);
                 queryClient.invalidateQueries({ queryKey: ['auth-user'] });
-                toast.success('Успешный вход');
+                toast.success('Successfully logged in');
                 router.push('/dashboard');
             }
         },
@@ -56,9 +55,7 @@ export function useAuth() {
     // Register mutation
     const registerMutation = useMutation({
         mutationFn: async (data: import('@/types').RegisterDTO) => {
-            // Strip fields not accepted by backend DTO
-            const { email, password, name, locale } = data as import('@/types').RegisterDTO & { confirmPassword?: string };
-            const response = await authApi.register({ email, password, name, locale });
+            const response = await authApi.register(data);
             if (!response.success) {
                 throw new Error(response.error?.message || 'Registration failed');
             }
@@ -67,11 +64,8 @@ export function useAuth() {
         onSuccess: (data) => {
             if (data?.token) {
                 apiClient.setToken(data.token);
-                if (data.refreshToken && typeof window !== 'undefined') {
-                    localStorage.setItem('refresh_token', data.refreshToken);
-                }
                 queryClient.invalidateQueries({ queryKey: ['auth-user'] });
-                toast.success('Аккаунт создан');
+                toast.success('Account created successfully');
                 router.push('/dashboard');
             }
         },
@@ -96,5 +90,6 @@ export function useAuth() {
         register: registerMutation.mutate,
         isRegistering: registerMutation.isPending,
         logout,
+        refetch,
     };
 }

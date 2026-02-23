@@ -239,7 +239,7 @@ export function Navbar({
           {user ? (
             <div className="hidden lg:flex items-center gap-2">
               {/* Notifications */}
-              <NotificationsPanel dict={dict} />
+              <NotificationsPanel dict={dict} locale={locale} />
 
               {/* User menu */}
               <DropdownMenu>
@@ -479,7 +479,7 @@ export function Navbar({
 
                     {/* Mobile Notifications - показываем на lg и ниже */}
                     <div className="lg:hidden px-2">
-                      <NotificationsPanel dict={dict} />
+                      <NotificationsPanel dict={dict} locale={locale} />
                     </div>
 
                     {/* User Actions */}

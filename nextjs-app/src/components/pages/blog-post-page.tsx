@@ -5,27 +5,36 @@ import { motion } from 'motion/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import {
   ArrowLeft,
   Calendar,
   Clock,
   Eye,
   Heart,
-  Share2,
   Twitter,
   Facebook,
   Linkedin,
   Link2,
   BookmarkPlus,
-  ThumbsUp
+  Loader2,
 } from 'lucide-react';
-import { getBlogPostBySlug, getRelatedPosts, type BlogPost } from '@/lib/api/blog-data';
+import {
+  getBlogPostBySlug as getApiBlogPost,
+  toggleBlogLike,
+  toggleBlogBookmark,
+  trackBlogView,
+  getBlogComments,
+  getPopularPosts,
+  type BlogComment,
+} from '@/lib/api/blog';
+import { getBlogPostBySlug as getLocalBlogPost, getRelatedPosts, type BlogPost as LocalBlogPost } from '@/lib/api/blog-data';
+import { BlogComments } from '@/components/blog/blog-comments';
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/ui/page-transition';
 import { DictionaryFallback } from '@/components/ui/dictionary-fallback';
 import { toast } from 'sonner';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 import type { Locale } from '@/lib/i18n/config';
+import { getUserIdFromToken } from '@/lib/utils/auth-helpers';
 
 type BlogPostPageProps = {
   slug: string;
@@ -44,43 +53,255 @@ const categoryColors: Record<string, string> = {
   Learning: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/20',
 };
 
+// Unified post type for display
+type DisplayPost = {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  coverImage?: string;
+  category: string;
+  tags: string[];
+  readTime: number;
+  likes: number;
+  views: number;
+  bookmarks: number;
+  publishedAt?: string;
+  createdAt?: string;
+  author: {
+    name: string;
+    avatar?: string;
+    bio?: string;
+    role?: string;
+  };
+  userLiked?: boolean;
+  userBookmarked?: boolean;
+  isFromApi: boolean;
+};
+
 export function BlogPostPage({ slug, dict, locale, onBack, onNavigateToPost }: BlogPostPageProps) {
-  // Null-safety проверка словаря
   if (!dict?.blog) {
     return <DictionaryFallback />;
   }
 
-  const [post, setPost] = useState<BlogPost | null>(null);
-  const [relatedPosts, setRelatedPosts] = useState<BlogPost[]>([]);
-  const [isLiked, setIsLiked] = useState(false);
-  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [post, setPost] = useState<DisplayPost | null>(null);
+  const [comments, setComments] = useState<BlogComment[]>([]);
+  const [relatedPosts, setRelatedPosts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLikeLoading, setIsLikeLoading] = useState(false);
+  const [isBookmarkLoading, setIsBookmarkLoading] = useState(false);
+  const currentUserId = getUserIdFromToken();
 
   useEffect(() => {
-    const blogPost = getBlogPostBySlug(slug, locale);
-    if (blogPost) {
-      setPost(blogPost);
-      setRelatedPosts(getRelatedPosts(blogPost.id, locale));
-    }
-  }, [slug, locale]);
+    loadPost();
+  }, [slug]);
 
-  if (!post) {
-    return (
-      <div className="container mx-auto px-4 py-20">
-        <Card className="border-2 border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-20">
-            <h3 className="text-2xl font-bold mb-2">Статья не найдена</h3>
-            <p className="text-muted-foreground mb-6">Запрошенная статья не существует</p>
-            <Button onClick={onBack}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Вернуться к блогу
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const loadPost = async () => {
+    try {
+      setIsLoading(true);
+
+      // Сначала пробуем API
+      const apiPost = await getApiBlogPost(slug);
+
+      if (apiPost) {
+        // Пост найден в API
+        const displayPost: DisplayPost = {
+          id: apiPost.id,
+          slug: apiPost.slug,
+          title: apiPost.title,
+          excerpt: apiPost.excerpt,
+          content: apiPost.content,
+          coverImage: apiPost.coverImage,
+          category: apiPost.category,
+          tags: apiPost.tags || [],
+          readTime: apiPost.readTime || 5,
+          likes: apiPost.likes || 0,
+          views: apiPost.views || 0,
+          bookmarks: apiPost.bookmarks || 0,
+          publishedAt: apiPost.publishedAt,
+          createdAt: apiPost.createdAt,
+          author: {
+            name: apiPost.author?.name || dict.blog.author,
+            avatar: apiPost.author?.avatar,
+            bio: apiPost.author?.bio,
+          },
+          userLiked: apiPost.userLiked || false,
+          userBookmarked: apiPost.userBookmarked || false,
+          isFromApi: true,
+        };
+        setPost(displayPost);
+
+        // Track view
+        trackBlogView(apiPost.id).catch(console.error);
+
+        // Load comments from API
+        loadComments(apiPost.id);
+
+        // Load popular posts for sidebar
+        try {
+          const popular = await getPopularPosts(3);
+          setRelatedPosts(popular || []);
+        } catch {
+          setRelatedPosts([]);
+        }
+      } else {
+        // Fallback на локальные данные
+        const localPost = getLocalBlogPost(slug, locale);
+        if (localPost) {
+          const displayPost: DisplayPost = {
+            id: localPost.id,
+            slug: localPost.slug,
+            title: localPost.title,
+            excerpt: localPost.excerpt,
+            content: localPost.content,
+            coverImage: localPost.coverImage,
+            category: localPost.category,
+            tags: localPost.tags || [],
+            readTime: localPost.readTime,
+            likes: localPost.likes,
+            views: localPost.views,
+            bookmarks: 0,
+            publishedAt: localPost.publishedAt,
+            author: {
+              name: localPost.author.name,
+              avatar: localPost.author.avatar,
+              role: localPost.author.role,
+            },
+            userLiked: false,
+            userBookmarked: false,
+            isFromApi: false,
+          };
+          setPost(displayPost);
+
+          // Get related local posts
+          const related = getRelatedPosts(localPost.id, locale, 3);
+          setRelatedPosts(related);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load post from API, trying local:', error);
+
+      // Fallback на локальные данные при ошибке
+      const localPost = getLocalBlogPost(slug, locale);
+      if (localPost) {
+        const displayPost: DisplayPost = {
+          id: localPost.id,
+          slug: localPost.slug,
+          title: localPost.title,
+          excerpt: localPost.excerpt,
+          content: localPost.content,
+          coverImage: localPost.coverImage,
+          category: localPost.category,
+          tags: localPost.tags || [],
+          readTime: localPost.readTime,
+          likes: localPost.likes,
+          views: localPost.views,
+          bookmarks: 0,
+          publishedAt: localPost.publishedAt,
+          author: {
+            name: localPost.author.name,
+            avatar: localPost.author.avatar,
+            role: localPost.author.role,
+          },
+          userLiked: false,
+          userBookmarked: false,
+          isFromApi: false,
+        };
+        setPost(displayPost);
+
+        const related = getRelatedPosts(localPost.id, locale, 3);
+        setRelatedPosts(related);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadComments = async (postId: string) => {
+    try {
+      const commentsData = await getBlogComments(postId);
+      setComments(commentsData || []);
+    } catch (error) {
+      console.error('Failed to load comments:', error);
+    }
+  };
+
+  const handleLike = async () => {
+    if (!post) return;
+    if (!post.isFromApi) {
+      // Для локальных постов — просто toggle UI
+      setPost(prev => prev ? { ...prev, userLiked: !prev.userLiked, likes: prev.userLiked ? prev.likes - 1 : prev.likes + 1 } : null);
+      toast.success(post.userLiked ? dict.blog.like_removed : dict.blog.like_added);
+      return;
+    }
+    if (!currentUserId) {
+      toast.error(dict.blog.login_to_like);
+      return;
+    }
+
+    setIsLikeLoading(true);
+    try {
+      const result = await toggleBlogLike(post.id);
+
+      if (!result.success || !result.data) {
+        const message = result.error?.message || dict.blog.failed_like || 'Не удалось поставить лайк';
+        toast.error(message);
+        return;
+      }
+
+      setPost(prev => prev ? {
+        ...prev,
+        userLiked: result.data!.liked,
+        likes: result.data!.liked ? prev.likes + 1 : prev.likes - 1,
+      } : null);
+      toast.success(result.data.liked ? dict.blog.like_added : dict.blog.like_removed);
+    } catch (error: any) {
+      console.error('Failed to toggle like:', error);
+      toast.error(dict.blog.failed_like || 'Не удалось поставить лайк');
+    } finally {
+      setIsLikeLoading(false);
+    }
+  };
+
+  const handleBookmark = async () => {
+    if (!post) return;
+    if (!post.isFromApi) {
+      setPost(prev => prev ? { ...prev, userBookmarked: !prev.userBookmarked, bookmarks: prev.userBookmarked ? prev.bookmarks - 1 : prev.bookmarks + 1 } : null);
+      toast.success(post.userBookmarked ? dict.blog.bookmark_removed : dict.blog.bookmark_added);
+      return;
+    }
+    if (!currentUserId) {
+      toast.error(dict.blog.login_to_bookmark);
+      return;
+    }
+
+    setIsBookmarkLoading(true);
+    try {
+      const result = await toggleBlogBookmark(post.id);
+
+      if (!result.success || !result.data) {
+        const message = result.error?.message || dict.blog.failed_bookmark || 'Не удалось сохранить в закладки';
+        toast.error(message);
+        return;
+      }
+
+      setPost(prev => prev ? {
+        ...prev,
+        userBookmarked: result.data!.bookmarked,
+        bookmarks: result.data!.bookmarked ? prev.bookmarks + 1 : prev.bookmarks - 1,
+      } : null);
+      toast.success(result.data.bookmarked ? dict.blog.bookmark_added : dict.blog.bookmark_removed);
+    } catch (error: any) {
+      console.error('Failed to toggle bookmark:', error);
+      toast.error(dict.blog.failed_bookmark || 'Не удалось сохранить в закладки');
+    } finally {
+      setIsBookmarkLoading(false);
+    }
+  };
 
   const handleShare = (platform: string) => {
+    if (!post) return;
     const url = window.location.href;
     const text = post.title;
 
@@ -97,7 +318,7 @@ export function BlogPostPage({ slug, dict, locale, onBack, onNavigateToPost }: B
         break;
       case 'copy':
         navigator.clipboard.writeText(url);
-        toast.success('Ссылка скопирована в буфер обмена');
+        toast.success(dict.blog.link_copied);
         return;
     }
 
@@ -106,23 +327,38 @@ export function BlogPostPage({ slug, dict, locale, onBack, onNavigateToPost }: B
     }
   };
 
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-    toast.success(isLiked ? 'Лайк убран' : 'Спасибо за лайк! ❤️');
-  };
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-20 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
-  const handleBookmark = () => {
-    setIsBookmarked(!isBookmarked);
-    toast.success(isBookmarked ? 'Удалено из закладок' : 'Добавлено в закладки 📚');
-  };
+  if (!post) {
+    return (
+      <div className="container mx-auto px-4 py-20">
+        <Card className="border-2 border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-20">
+            <h3 className="text-2xl font-bold mb-2">{dict.blog.article_not_found}</h3>
+            <p className="text-muted-foreground mb-6">{dict.blog.article_not_found_desc}</p>
+            <Button onClick={onBack}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              {dict.blog.back_to_blog}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-6 md:py-10">
         <Button variant="ghost" className="mb-6 md:mb-8 -ml-2" onClick={onBack}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          <span className="hidden sm:inline">Вернуться к блогу</span>
-          <span className="sm:hidden">Назад</span>
+          <span className="hidden sm:inline">{dict.blog.back_to_blog}</span>
+          <span className="sm:hidden">{dict.blog.back}</span>
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12">
@@ -132,8 +368,8 @@ export function BlogPostPage({ slug, dict, locale, onBack, onNavigateToPost }: B
               <article>
                 {/* Header */}
                 <div className="mb-6 md:mb-8">
-                  <Badge className={`${categoryColors[post.category]} border mb-4`}>
-                    {post.category}
+                  <Badge className={`${categoryColors[post.category] || ''} border mb-4`}>
+                    {dict.blog.categories?.[post.category] || post.category}
                   </Badge>
                   <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6 leading-tight">
                     {post.title}
@@ -146,7 +382,7 @@ export function BlogPostPage({ slug, dict, locale, onBack, onNavigateToPost }: B
                   <div className="flex flex-wrap items-center gap-4 md:gap-6 text-sm md:text-base text-muted-foreground mb-6">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 shrink-0" />
-                      <span>{new Date(post.publishedAt).toLocaleDateString('ru-RU', {
+                      <span>{new Date(post.publishedAt || post.createdAt || Date.now()).toLocaleDateString(locale, {
                         day: 'numeric',
                         month: 'long',
                         year: 'numeric'
@@ -154,90 +390,94 @@ export function BlogPostPage({ slug, dict, locale, onBack, onNavigateToPost }: B
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 shrink-0" />
-                      <span>{post.readTime} мин чтения</span>
+                      <span>{post.readTime} {dict.blog.read_time}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Eye className="h-4 w-4 shrink-0" />
-                      <span>{post.views.toLocaleString()} просмотров</span>
+                      <span>{(post.views || 0).toLocaleString()} {dict.blog.views}</span>
                     </div>
                   </div>
 
                   {/* Author */}
                   <div className="flex items-center gap-3 md:gap-4 p-4 md:p-6 rounded-xl bg-muted/50 border">
                     <img
-                      src={post.author.avatar}
+                      src={post.author.avatar || '/default-avatar.png'}
                       alt={post.author.name}
                       className="w-12 h-12 md:w-16 md:h-16 rounded-full object-cover"
                     />
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-base md:text-lg">{post.author.name}</p>
-                      <p className="text-sm md:text-base text-muted-foreground">{post.author.role}</p>
+                      {(post.author.bio || post.author.role) && (
+                        <p className="text-sm md:text-base text-muted-foreground">{post.author.bio || post.author.role}</p>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 {/* Cover Image */}
-                <div className="mb-8 md:mb-12 aspect-video rounded-2xl overflow-hidden bg-muted shadow-xl">
-                  <img
-                    src={post.coverImage}
-                    alt={post.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+                {post.coverImage && (
+                  <div className="mb-8 md:mb-12 aspect-video rounded-2xl overflow-hidden bg-muted shadow-xl">
+                    <img
+                      src={post.coverImage}
+                      alt={post.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
 
                 {/* Content */}
                 <div
-                  className="prose prose-sm md:prose-base lg:prose-lg dark:prose-invert max-w-none
-                    prose-headings:font-bold prose-headings:tracking-tight
-                    prose-h2:text-2xl md:prose-h2:text-3xl prose-h2:mt-12 prose-h2:mb-6
-                    prose-h3:text-xl md:prose-h3:text-2xl prose-h3:mt-8 prose-h3:mb-4
-                    prose-p:leading-relaxed prose-p:text-foreground/90
-                    prose-a:text-primary prose-a:no-underline hover:prose-a:underline
-                    prose-strong:text-foreground prose-strong:font-semibold
-                    prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded
-                    prose-pre:bg-muted prose-pre:border prose-pre:rounded-xl
-                    prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-primary/5 
-                    prose-blockquote:py-4 prose-blockquote:px-6 prose-blockquote:rounded-r-xl prose-blockquote:not-italic
-                    prose-ul:list-disc prose-ol:list-decimal
-                    prose-li:text-foreground/90 prose-li:marker:text-primary"
+                  className="prose prose-lg max-w-none"
                   dangerouslySetInnerHTML={{ __html: post.content }}
                 />
 
                 {/* Tags */}
-                <div className="mt-12 pt-8 border-t">
-                  <div className="flex flex-wrap gap-2">
-                    {post.tags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="text-xs md:text-sm">
-                        #{tag}
-                      </Badge>
-                    ))}
+                {post.tags && post.tags.length > 0 && (
+                  <div className="mt-12 pt-8 border-t">
+                    <div className="flex flex-wrap gap-2">
+                      {post.tags.map((tag) => (
+                        <Badge key={tag} variant="secondary" className="text-xs md:text-sm">
+                          #{tag}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Actions */}
                 <div className="mt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 md:p-6 rounded-xl bg-muted/50 border">
                   <div className="flex items-center gap-3 md:gap-4">
                     <Button
-                      variant={isLiked ? 'default' : 'outline'}
+                      variant={post.userLiked ? 'default' : 'outline'}
                       size="sm"
                       onClick={handleLike}
+                      disabled={isLikeLoading}
                       className="gap-2"
                     >
-                      <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
-                      <span>{post.likes + (isLiked ? 1 : 0)}</span>
+                      {isLikeLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Heart className={`h-4 w-4 ${post.userLiked ? 'fill-current' : ''}`} />
+                      )}
+                      <span>{post.likes}</span>
                     </Button>
                     <Button
-                      variant={isBookmarked ? 'default' : 'outline'}
+                      variant={post.userBookmarked ? 'default' : 'outline'}
                       size="sm"
                       onClick={handleBookmark}
+                      disabled={isBookmarkLoading}
                       className="gap-2"
                     >
-                      <BookmarkPlus className={`h-4 w-4 ${isBookmarked ? 'fill-current' : ''}`} />
-                      <span className="hidden sm:inline">Сохранить</span>
+                      {isBookmarkLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <BookmarkPlus className={`h-4 w-4 ${post.userBookmarked ? 'fill-current' : ''}`} />
+                      )}
+                      <span className="hidden sm:inline">{dict.blog.save}</span>
                     </Button>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground mr-2 hidden sm:inline">Поделиться:</span>
+                    <span className="text-sm text-muted-foreground mr-2 hidden sm:inline">{dict.blog.share}</span>
                     <Button variant="outline" size="icon" onClick={() => handleShare('twitter')}>
                       <Twitter className="h-4 w-4" />
                     </Button>
@@ -255,13 +495,25 @@ export function BlogPostPage({ slug, dict, locale, onBack, onNavigateToPost }: B
               </article>
             </FadeIn>
 
+            {/* Comments - only for API posts */}
+            {post.isFromApi && (
+              <BlogComments
+                postId={post.id}
+                comments={comments}
+                currentUserId={currentUserId || undefined}
+                locale={locale}
+                onCommentAdded={() => loadComments(post.id)}
+                dict={dict.blog.comments}
+              />
+            )}
+
             {/* Related Posts */}
             {relatedPosts.length > 0 && (
               <div className="mt-16 md:mt-20">
-                <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">Похожие статьи</h2>
+                <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">{dict.blog.related_posts}</h2>
                 <StaggerContainer>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {relatedPosts.map((relatedPost) => (
+                    {relatedPosts.map((relatedPost: any) => (
                       <StaggerItem key={relatedPost.id}>
                         <Card
                           className="cursor-pointer hover:shadow-xl transition-all group overflow-hidden h-full flex flex-col"
@@ -282,7 +534,7 @@ export function BlogPostPage({ slug, dict, locale, onBack, onNavigateToPost }: B
                           <CardContent className="pt-0">
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                               <Clock className="h-3 w-3" />
-                              <span>{relatedPost.readTime} мин</span>
+                              <span>{relatedPost.readTime} {dict.blog.read_time}</span>
                             </div>
                           </CardContent>
                         </Card>
@@ -297,65 +549,39 @@ export function BlogPostPage({ slug, dict, locale, onBack, onNavigateToPost }: B
           {/* Sidebar */}
           <div className="lg:col-span-4">
             <div className="lg:sticky lg:top-24 space-y-6">
-              {/* Share Card */}
-              <Card className="hidden lg:block">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Share2 className="h-5 w-5" />
-                    Поделиться
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Button variant="outline" className="w-full justify-start gap-3" onClick={() => handleShare('twitter')}>
-                    <Twitter className="h-4 w-4" />
-                    Twitter
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start gap-3" onClick={() => handleShare('facebook')}>
-                    <Facebook className="h-4 w-4" />
-                    Facebook
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start gap-3" onClick={() => handleShare('linkedin')}>
-                    <Linkedin className="h-4 w-4" />
-                    LinkedIn
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start gap-3" onClick={() => handleShare('copy')}>
-                    <Link2 className="h-4 w-4" />
-                    Копировать ссылку
-                  </Button>
-                </CardContent>
-              </Card>
-
               {/* Popular Posts */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">📈 Популярное</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {relatedPosts.slice(0, 3).map((popularPost, index) => (
-                    <div
-                      key={popularPost.id}
-                      className="flex gap-3 cursor-pointer group"
-                      onClick={() => onNavigateToPost(popularPost.slug)}
-                    >
-                      <div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-muted">
-                        <img
-                          src={popularPost.coverImage}
-                          alt={popularPost.title}
-                          className="w-full h-full object-cover"
-                        />
+              {relatedPosts.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">📈 {dict.blog.popular_posts}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {relatedPosts.slice(0, 3).map((popularPost: any) => (
+                      <div
+                        key={popularPost.id}
+                        className="flex gap-3 cursor-pointer group"
+                        onClick={() => onNavigateToPost(popularPost.slug)}
+                      >
+                        <div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-muted">
+                          <img
+                            src={popularPost.coverImage}
+                            alt={popularPost.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold line-clamp-2 group-hover:text-primary transition-colors">
+                            {popularPost.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {popularPost.readTime} {dict.blog.read_time}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold line-clamp-2 group-hover:text-primary transition-colors">
-                          {popularPost.title}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {popularPost.readTime} мин
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </div>

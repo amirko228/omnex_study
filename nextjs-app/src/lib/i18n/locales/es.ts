@@ -556,7 +556,10 @@ export const es = {
     all_posts: "Todas las Publicaciones",
     subtitle: "Aprender, Crecer, Lograr",
     description: "Perspectivas, tutoriales e historias de éxito del mundo del aprendizaje con IA",
-    featured: "Publicaciones Destacadas",
+    featured: "Publicaciones Populares",
+    my_favorites: "Mis Favoritos",
+    favorites_empty: "Aún no tienes favoritos. ¡Dale like o guarda publicaciones!",
+    favorites_login_required: "Inicia sesión para ver tus favoritos",
     search_placeholder: "Buscar artículos...",
     cta_title: "Comienza tu viaje en TI hoy",
     cta_description: "Únete a miles de estudiantes que ya están aprendiendo programación e IA en nuestra plataforma.",
@@ -565,7 +568,53 @@ export const es = {
     post_count_many: "artículos",
     no_results: "No se encontraron resultados",
     no_results_description: "Intenta cambiar tu consulta de búsqueda o seleccionar una categoría diferente.",
-    read_time: "min de lectura"
+    read_time: "min de lectura",
+    categories: {
+      all: "Todos",
+      AI: "IA",
+      Programming: "Programación",
+      Career: "Carrera",
+      Design: "Diseño",
+      Business: "Negocios",
+      Learning: "Aprendizaje"
+    },
+    author: "Autor",
+    back_to_blog: "Volver al blog",
+    back: "Volver",
+    article_not_found: "Artículo no encontrado",
+    article_not_found_desc: "El artículo solicitado no existe",
+    related_posts: "Artículos relacionados",
+    popular_posts: "Popular",
+    views: "vistas",
+    login_to_like: "Inicia sesión para dar like",
+    login_to_bookmark: "Inicia sesión para guardar",
+    share: "Compartir:",
+    save: "Guardar",
+    like_added: "¡Gracias por el like! ❤️",
+    like_removed: "Like eliminado",
+    bookmark_added: "Añadido a marcadores 📚",
+    bookmark_removed: "Eliminado de marcadores",
+    link_copied: "Enlace copiado",
+    failed_like: "Error al dar like",
+    failed_bookmark: "Error al guardar",
+    comments: {
+      title: "Comentarios",
+      add_comment: "Añadir comentario",
+      comment_placeholder: "Comparte tus pensamientos...",
+      submit: "Enviar",
+      reply: "Responder",
+      delete: "Eliminar",
+      replying_to: "Respondiendo a",
+      cancel: "Cancelar",
+      no_comments: "Aún no hay comentarios",
+      be_first: "¡Sé el primero en comentar!",
+      login_required: "Inicia sesión para comentar",
+      delete_confirm: "¿Eliminar comentario?",
+      deleted: "Comentario eliminado",
+      failed_delete: "Error al eliminar",
+      added: "Comentario añadido! ✓",
+      failed_add: "Error al añadir"
+    }
   },
   footer: {
     tagline: "Plataforma de Aprendizaje IA para Todos",
@@ -590,11 +639,81 @@ export const es = {
     chat_support: "Soporte por Chat",
     chat_support_desc: "Ayuda en línea 24/7",
     email_support: "Soporte por Email",
+    email_support_desc: "Respuesta en 24 horas",
     faq_title: "Preguntas Frecuentes",
     no_answer_title: "¿No encontró una respuesta?",
     no_answer_desc: "Nuestro equipo de soporte siempre está listo para ayudar",
     contact_support: "Contactar Soporte",
     start_chat: "Iniciar Chat",
+    browse_all: "Ver todo",
+    articles: "artículos",
+    back: "Volver",
+    helpful: "¿Fue útil?",
+    yes: "Sí",
+    no: "No",
+    thanks_feedback: "¡Gracias por su comentario!",
+    related_articles: "Artículos Relacionados",
+    kb_categories: [
+      {
+        id: "getting-started",
+        title: "Primeros Pasos",
+        description: "Cómo empezar a aprender en la plataforma",
+        icon: "rocket",
+        articles: [
+          { id: "gs-1", title: "Registro y primer inicio de sesión", content: "Para usar la plataforma, vaya a la página de registro. Complete el formulario: nombre, email y contraseña. Se enviará un email de confirmación después del registro." },
+          { id: "gs-2", title: "Elegir su primer curso", content: "Después de iniciar sesión, vaya al catálogo de cursos. Filtre por categorías: programación, diseño, marketing, ciencia de datos. La generación de cursos personalizados por IA también está disponible." },
+          { id: "gs-3", title: "Configurar su perfil", content: "Vaya a la configuración del perfil para personalizar su avatar, nombre y otros detalles. Elija su idioma y tema preferidos." }
+        ]
+      },
+      {
+        id: "ai-features",
+        title: "Funciones de IA",
+        description: "Cómo usar el tutor de IA y la generación de cursos",
+        icon: "sparkles",
+        articles: [
+          { id: "ai-1", title: "Tutor de IA: Hacer preguntas", content: "El tutor de IA está disponible en cada lección. Haga clic en el icono de chat para abrir un diálogo. La IA entiende el contexto de la lección y da respuestas detalladas." },
+          { id: "ai-2", title: "Generación de cursos por IA", content: "Vaya a la sección 'Crear curso'. Especifique el tema, nivel de dificultad y número de lecciones. La IA creará automáticamente la estructura del curso." },
+          { id: "ai-3", title: "Aprendizaje adaptativo", content: "La plataforma analiza su progreso y adapta automáticamente la dificultad de los materiales." }
+        ]
+      },
+      {
+        id: "account",
+        title: "Cuenta y Suscripción",
+        description: "Gestión de cuenta, pagos y suscripción",
+        icon: "user",
+        articles: [
+          { id: "acc-1", title: "Gestionar su suscripción", content: "Vaya a Configuración → Suscripción. El plan gratuito ofrece acceso limitado. El Premium ofrece acceso completo a todos los materiales." },
+          { id: "acc-2", title: "Cambiar contraseña", content: "Vaya a Configuración → Seguridad. Ingrese su contraseña actual y la nueva dos veces." },
+          { id: "acc-3", title: "Eliminar cuenta", content: "Vaya a Configuración → Cuenta → Eliminar. Todos sus datos serán eliminados permanentemente." }
+        ]
+      },
+      {
+        id: "courses",
+        title: "Cursos y Aprendizaje",
+        description: "Formatos de aprendizaje, certificados y progreso",
+        icon: "book",
+        articles: [
+          { id: "course-1", title: "Formatos de aprendizaje", content: "La plataforma soporta 4 formatos: lecciones de texto, cuestionarios interactivos, diálogo con IA y tareas prácticas." },
+          { id: "course-2", title: "Obtener un certificado", content: "Complete todas las lecciones y apruebe el examen final. El certificado se genera automáticamente en formato PDF." },
+          { id: "course-3", title: "Seguimiento del progreso", content: "En la página 'Mi Progreso', vea estadísticas de aprendizaje: lecciones completadas, tiempo, calificaciones y logros." }
+        ]
+      }
+    ],
+    chat_placeholder: "Escriba su mensaje...",
+    chat_greeting: "¡Hola! ¿Cómo podemos ayudarle?",
+    chat_auto_reply: "¡Gracias por su mensaje! Un operador responderá en breve.",
+    chat_send: "Enviar",
+    chat_online: "En línea",
+    chat_support_hours: "Lun-Vie: 9:00 - 21:00 (UTC+3)",
+    email_form_title: "Escríbanos",
+    email_form_desc: "Complete el formulario y responderemos en 24 horas",
+    email_name: "Su Nombre",
+    email_address: "Dirección de Email",
+    email_subject: "Asunto",
+    email_message: "Mensaje",
+    email_send: "Enviar Mensaje",
+    email_sent_success: "¡Mensaje enviado! Responderemos en 24 horas.",
+    email_subjects: ["Problema técnico", "Pregunta de suscripción", "Pregunta de curso", "Sugerencia", "Otro"],
     faqs: [
       {
         question: "¿Cómo empezar con la plataforma?",
@@ -814,5 +933,37 @@ export const es = {
       processing: "Procesamiento de IA"
     },
     disclaimer: "El contenido generado por IA puede ser inexacto."
+  },
+  reviews: {
+    title: "Reseñas",
+    add_review: "Agregar reseña",
+    your_review: "Tu reseña",
+    rate_course: "Califica este curso de 1 a 5 estrellas",
+    comment_optional: "Comentario (opcional)",
+    comment_placeholder: "Comparte tu experiencia con este curso...",
+    publish_review: "Publicar reseña",
+    update_review: "Actualizar reseña",
+    submitting: "Enviando...",
+    cancel: "Cancelar",
+    delete: "Eliminar",
+    helpful: "Útil",
+    report: "Reportar",
+    no_reviews: "Aún no hay reseñas para este curso",
+    be_first: "¡Sé el primero en dejar una reseña!",
+    loading: "Cargando reseñas...",
+    you_badge: "Tú",
+    error_select_rating: "Por favor selecciona una calificación",
+    error_submit: "Error al enviar la reseña",
+    confirm_delete: "¿Estás seguro de que quieres eliminar esta reseña?",
+    report_reason_prompt: "Especifica el motivo del reporte (opcional):",
+    report_sent: "Reporte enviado",
+    error_report: "Error al enviar el reporte",
+    reviews_count_one: "reseña",
+    reviews_count_few: "reseñas",
+    reviews_count_many: "reseñas",
+    prev_page: "Anterior",
+    next_page: "Siguiente",
+    page_of: "Página {page} de {total}",
+    out_of_five: "de 5"
   }
 } as const;

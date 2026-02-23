@@ -3,13 +3,20 @@
 import { useAppContext } from '../providers';
 import { FormatSelection } from '@/components/course/format-selection';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import type { CourseFormat } from '@/types';
 
 export default function FormatSelectionPage() {
-    const { dict, selectedCourse, setSelectedFormat } = useAppContext();
+    const { dict, selectedCourse, setSelectedFormat, isAuthenticated, isLoading } = useAppContext();
     const router = useRouter();
 
-    if (!dict) {
+    useEffect(() => {
+        if (!isLoading && !isAuthenticated) {
+            router.push('/login');
+        }
+    }, [isAuthenticated, isLoading, router]);
+
+    if (!dict || isLoading || !isAuthenticated) {
         return (
             <div className="flex h-screen items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />

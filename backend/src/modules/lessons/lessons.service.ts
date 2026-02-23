@@ -4,10 +4,14 @@
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class LessonsService {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private notificationsService: NotificationsService,
+    ) { }
 
     // Уроки модуля
     async getLessonsByModule(moduleId: string) {
@@ -91,6 +95,16 @@ export class LessonsService {
             },
         });
 
+        // Отправляем уведомление о результате квиза
+        await this.notificationsService.create(userId, {
+            type: passed ? 'info' : 'warning',
+            title: passed ? 'Тест пройден!' : 'Тест не пройден',
+            message: passed
+                ? `Поздравляем! Вы набрали ${score}% в тесте "${quiz.title || 'урока'}".`
+                : `Ваш результат: ${score}%. Для прохождения нужно ${quiz.passingScore}%. Попробуйте еще раз!`,
+            channel: 'in-app'
+        });
+
         return {
             ...attempt,
             totalQuestions: quiz.questions.length,
@@ -116,6 +130,14 @@ export class LessonsService {
                 isCompleted: true,
                 completedAt: new Date(),
             },
+        });
+
+        // Уведомление о завершении урока
+        await this.notificationsService.create(userId, {
+            type: 'success',
+            title: 'Урок завершен',
+            message: `Отлично! Вы завершили урок "${lesson.title}". Продолжайте в том же темпе!`,
+            channel: 'in-app'
         });
 
         return { message: 'Урок завершён' };

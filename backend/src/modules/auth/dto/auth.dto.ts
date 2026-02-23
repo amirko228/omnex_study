@@ -97,10 +97,10 @@ export class VerifyEmailDto {
 // Смена пароля
 // ==========================================
 export class ChangePasswordDto {
-    @ApiProperty()
+    @ApiPropertyOptional()
+    @IsOptional()
     @IsString()
-    @IsNotEmpty()
-    currentPassword: string;
+    currentPassword?: string;
 
     @ApiProperty()
     @IsString()
@@ -138,6 +138,11 @@ export class OAuthCallbackDto {
     @IsOptional()
     @IsString()
     state?: string;
+
+    @ApiPropertyOptional({ description: 'Redirect URI used when initiating OAuth flow' })
+    @IsOptional()
+    @IsString()
+    redirectUri?: string;
 }
 
 // ==========================================

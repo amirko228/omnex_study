@@ -10,6 +10,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 // Core сервисы
 import { PrismaModule } from './common/prisma/prisma.module';
 import { RedisModule } from './common/redis/redis.module';
+import { EmailModule } from './common/email/email.module';
 
 // Модули приложения
 import { AuthModule } from './modules/auth/auth.module';
@@ -23,6 +24,8 @@ import { BillingModule } from './modules/billing/billing.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { ChatModule } from './modules/chat/chat.module';
+import { BlogModule } from './modules/blog/blog.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -50,6 +53,7 @@ import { HealthController } from './health.controller';
         // ==========================================
         PrismaModule,
         RedisModule,
+        EmailModule,
 
         // ==========================================
         // Модули приложения
@@ -65,6 +69,8 @@ import { HealthController } from './health.controller';
         NotificationsModule,
         AnalyticsModule,
         AdminModule,
+        ChatModule,
+        BlogModule,
     ],
     controllers: [HealthController],
 })

@@ -62,6 +62,7 @@ export interface User {
   subscription?: 'free' | 'pro' | 'enterprise';
   plan?: 'free' | 'pro' | 'enterprise'; // Alias for subscription
   purchasedCourses?: string[];
+  hasPassword?: boolean;
 }
 
 export interface UserProfile {
@@ -94,6 +95,7 @@ export interface AuthResponse {
 export interface LoginCredentials {
   email: string;
   password?: string;
+  rememberMe?: boolean;
 }
 
 export interface RegisterDTO {
@@ -436,7 +438,7 @@ export interface ApiRequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   headers?: Record<string, string>;
   body?: unknown;
-  params?: Record<string, unknown>;
+  params?: Record<string, string | number | boolean | undefined | null>;
 }
 
 // ============================================================================

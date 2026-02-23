@@ -590,7 +590,10 @@ export const en = {
     all_posts: "All Posts",
     subtitle: "Learn, Grow, Achieve",
     description: "Insights, tutorials and success stories from the AI learning world",
-    featured: "Featured Posts",
+    featured: "Popular Posts",
+    my_favorites: "My Favorites",
+    favorites_empty: "You have no favorite posts yet. Like or save posts to see them here!",
+    favorites_login_required: "Log in to see your favorite posts",
     search_placeholder: "Search articles...",
     cta_title: "Start Your IT Journey Today",
     cta_description: "Join thousands of students who are already learning programming and AI on our platform.",
@@ -599,7 +602,53 @@ export const en = {
     post_count_many: "articles",
     no_results: "No results found",
     no_results_description: "Try changing your search query or selecting a different category.",
-    read_time: "min read"
+    read_time: "min read",
+    categories: {
+      all: "All",
+      AI: "AI",
+      Programming: "Programming",
+      Career: "Career",
+      Design: "Design",
+      Business: "Business",
+      Learning: "Learning"
+    },
+    author: "Author",
+    back_to_blog: "Back to Blog",
+    back: "Back",
+    article_not_found: "Article not found",
+    article_not_found_desc: "The requested article does not exist",
+    related_posts: "Related Posts",
+    popular_posts: "Popular",
+    views: "views",
+    login_to_like: "Log in to like",
+    login_to_bookmark: "Log in to bookmark",
+    share: "Share:",
+    save: "Save",
+    like_added: "Thanks for the like! ❤️",
+    like_removed: "Like removed",
+    bookmark_added: "Added to bookmarks 📚",
+    bookmark_removed: "Removed from bookmarks",
+    link_copied: "Link copied",
+    failed_like: "Failed to like",
+    failed_bookmark: "Failed to bookmark",
+    comments: {
+      title: "Comments",
+      add_comment: "Add comment",
+      comment_placeholder: "Share your thoughts...",
+      submit: "Submit",
+      reply: "Reply",
+      delete: "Delete",
+      replying_to: "Replying to",
+      cancel: "Cancel",
+      no_comments: "No comments yet",
+      be_first: "Be the first to comment!",
+      login_required: "Log in to comment",
+      delete_confirm: "Delete comment?",
+      deleted: "Comment deleted",
+      failed_delete: "Failed to delete comment",
+      added: "Comment added! ✓",
+      failed_add: "Failed to add comment"
+    }
   },
   footer: {
     tagline: "AI Learning Platform for Everyone",
@@ -624,11 +673,81 @@ export const en = {
     chat_support: "Chat Support",
     chat_support_desc: "Online help 24/7",
     email_support: "Email Support",
+    email_support_desc: "Response within 24 hours",
     faq_title: "Frequently Asked Questions",
     no_answer_title: "Didn't find an answer?",
     no_answer_desc: "Our support team is always ready to help",
     contact_support: "Contact Support",
     start_chat: "Start Chat",
+    browse_all: "Browse all",
+    articles: "articles",
+    back: "Back",
+    helpful: "Was this helpful?",
+    yes: "Yes",
+    no: "No",
+    thanks_feedback: "Thanks for your feedback!",
+    related_articles: "Related Articles",
+    kb_categories: [
+      {
+        id: "getting-started",
+        title: "Getting Started",
+        description: "How to start learning on the platform",
+        icon: "rocket",
+        articles: [
+          { id: "gs-1", title: "Registration and First Login", content: "To start using the platform, go to the registration page. Fill in the form: enter your name, email, and password. After registration, a confirmation email will be sent. Once confirmed, you can log in and start learning." },
+          { id: "gs-2", title: "Choosing Your First Course", content: "After logging in, go to the course catalog. You can filter courses by categories: programming, design, marketing, data science. AI-powered personalized course generation is also available — specify a topic and level, and the platform will create a course just for you." },
+          { id: "gs-3", title: "Setting Up Your Profile", content: "Go to your profile settings to customize your avatar, name, and other details. You can also choose your preferred interface language (Russian, English, German, Spanish, or French) and theme (light or dark)." }
+        ]
+      },
+      {
+        id: "ai-features",
+        title: "AI Features",
+        description: "How to use the AI tutor and course generation",
+        icon: "sparkles",
+        articles: [
+          { id: "ai-1", title: "AI Tutor: Asking Questions", content: "The AI tutor is available on every lesson. Click the chat icon to open a dialogue. Ask questions in natural language — the AI understands the lesson context and will give a detailed answer. It can explain complex concepts, provide code examples, and even help with homework." },
+          { id: "ai-2", title: "AI Course Generation", content: "Go to the 'Create Course' section. Specify the topic, desired difficulty level, and number of lessons. The AI will automatically create a course structure with learning materials, quizzes, and practical assignments. The course will be available immediately after generation." },
+          { id: "ai-3", title: "Adaptive Learning", content: "The platform analyzes your progress and automatically adapts the difficulty of materials. If you're doing well — materials become more challenging. If there are difficulties — the AI will offer additional explanations and simplified examples." }
+        ]
+      },
+      {
+        id: "account",
+        title: "Account & Subscription",
+        description: "Account management, payment, and subscription",
+        icon: "user",
+        articles: [
+          { id: "acc-1", title: "Managing Your Subscription", content: "Go to Settings → Subscription to manage your plan. The free plan includes access to a limited number of courses. Premium gives full access to all materials, the AI tutor, and certificates. You can change or cancel your subscription at any time." },
+          { id: "acc-2", title: "Changing Your Password", content: "To change your password, go to Settings → Security. Enter your current password and the new one twice. The password must contain at least 8 characters, including letters and numbers." },
+          { id: "acc-3", title: "Deleting Your Account", content: "To delete your account, go to Settings → Account → Delete Account. Please note: all your data, progress, and certificates will be permanently deleted. This operation cannot be undone." }
+        ]
+      },
+      {
+        id: "courses",
+        title: "Courses & Learning",
+        description: "Learning formats, certificates, and progress",
+        icon: "book",
+        articles: [
+          { id: "course-1", title: "Learning Formats", content: "The platform supports 4 formats: text lessons with code examples, interactive quizzes with instant verification, AI tutor dialogue, and practical assignments with AI review. You can switch between formats at any time." },
+          { id: "course-2", title: "Getting a Certificate", content: "To get a certificate, complete all course lessons and pass the final test. The certificate is generated automatically and available in PDF format. You can share it on LinkedIn or download it to your computer." },
+          { id: "course-3", title: "Tracking Progress", content: "On the 'My Progress' page, you can see learning statistics: completed lessons, time spent, average test scores, and achievements. Charts show learning dynamics over the last 30 days." }
+        ]
+      }
+    ],
+    chat_placeholder: "Type your message...",
+    chat_greeting: "Hello! How can we help you?",
+    chat_auto_reply: "Thank you for your message! An operator will respond shortly. Typically, a response arrives within a few minutes.",
+    chat_send: "Send",
+    chat_online: "Online",
+    chat_support_hours: "Mon-Fri: 9:00 AM - 9:00 PM (UTC+3)",
+    email_form_title: "Write to Us",
+    email_form_desc: "Fill out the form and we'll respond within 24 hours",
+    email_name: "Your Name",
+    email_address: "Email Address",
+    email_subject: "Subject",
+    email_message: "Message",
+    email_send: "Send Message",
+    email_sent_success: "Message sent! We'll respond within 24 hours.",
+    email_subjects: ["Technical Issue", "Subscription Question", "Course Question", "Suggestion", "Other"],
     faqs: [
       {
         question: "How to start using the platform?",
@@ -871,5 +990,37 @@ export const en = {
       processing: "AI Processing"
     },
     disclaimer: "AI generated content can be inaccurate."
+  },
+  reviews: {
+    title: "Reviews",
+    add_review: "Add Review",
+    your_review: "Your Review",
+    rate_course: "Rate this course from 1 to 5 stars",
+    comment_optional: "Comment (optional)",
+    comment_placeholder: "Share your experience with this course...",
+    publish_review: "Publish Review",
+    update_review: "Update Review",
+    submitting: "Submitting...",
+    cancel: "Cancel",
+    delete: "Delete",
+    helpful: "Helpful",
+    report: "Report",
+    no_reviews: "No reviews yet for this course",
+    be_first: "Be the first to leave a review!",
+    loading: "Loading reviews...",
+    you_badge: "You",
+    error_select_rating: "Please select a rating",
+    error_submit: "Failed to submit review",
+    confirm_delete: "Are you sure you want to delete this review?",
+    report_reason_prompt: "Specify the reason for reporting (optional):",
+    report_sent: "Report sent",
+    error_report: "Failed to send report",
+    reviews_count_one: "review",
+    reviews_count_few: "reviews",
+    reviews_count_many: "reviews",
+    prev_page: "Previous",
+    next_page: "Next",
+    page_of: "Page {page} of {total}",
+    out_of_five: "out of 5"
   }
 } as const;

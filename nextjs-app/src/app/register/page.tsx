@@ -17,7 +17,9 @@ export default function Register() {
 
     const handleRegister = (data: any) => {
         // Data is now validated by react-hook-form
-        register(data);
+        // eslint-disable-next-line no-unused-vars
+        const { confirmPassword, ...registerData } = data;
+        register(registerData);
     };
 
     const handleNavigate = (page: string) => {

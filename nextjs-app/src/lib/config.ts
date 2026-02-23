@@ -5,7 +5,7 @@
 export const config = {
   // API Configuration
   api: {
-    baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1',
+    baseUrl: process.env.NEXT_PUBLIC_API_URL || '/api/v1',
     timeout: 30000,
     retries: 3,
   },
@@ -109,7 +109,7 @@ export const config = {
 
   // AI Configuration
   ai: {
-    apiUrl: process.env.NEXT_PUBLIC_AI_API_URL || 'http://localhost:3002/ai',
+    apiUrl: process.env.NEXT_PUBLIC_AI_API_URL || '',
     model: 'gpt-4',
     maxTokens: 4000,
     temperature: 0.7,
@@ -175,6 +175,19 @@ export const config = {
       'application/pdf',
       'text/plain',
     ],
+  },
+
+  // Support & Chat Integration
+  support: {
+    whatsapp: process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP || 'https://wa.me/79998881122',
+    telegram: process.env.NEXT_PUBLIC_SUPPORT_TELEGRAM || 'https://t.me/omnex_support',
+    email: 'support@omnex.study',
+  },
+  social: {
+    telegram: 'https://t.me/omnex_study',
+    youtube: 'https://youtube.com/@omnex_study',
+    threads: 'https://threads.net/@omnex_study',
+    instagram: 'https://instagram.com/omnex_study',
   },
 } as const;
 

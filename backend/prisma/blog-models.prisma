@@ -1,0 +1,103 @@
+// ============================================================================
+// BLOG СИСТЕМА
+// ============================================================================
+
+/// Посты блога
+model BlogPost {
+  id           String    @id @default(uuid()) @db.Uuid
+  slug         String    @unique @db.VarChar(255)
+  title        String    @db.VarChar(500)
+  excerpt      String    @db.Text
+  content      String    @db.Text
+  coverImage   String?   @map("cover_image")
+  category     String    @db.VarChar(100)
+  tags         String[]
+  authorId     String    @map("author_id") @db.Uuid
+  readTime     Int       @map("read_time") @default(5) // в минутах
+  likes        Int       @default(0)
+  views        Int       @default(0)
+  bookmarks    Int       @default(0)
+  published    Boolean   @default(false)
+  publishedAt  DateTime? @map("published_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // Связи
+  author         User            @relation("BlogAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  comments       BlogComment[]
+  userLikes      BlogLike[]
+  userBookmarks  BlogBookmark[]
+  viewRecords    BlogView[]
+
+  @@index([category])
+  @@index([published, publishedAt])
+  @@index([authorId])
+  @@map("blog_posts")
+}
+
+/// Лайки постов
+model BlogLike {
+  id        String   @id @default(uuid()) @db.Uuid
+  postId    String   @map("post_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  post BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User     @relation("BlogLikes", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@map("blog_likes")
+}
+
+/// Закладки постов
+model BlogBookmark {
+  id        String   @id @default(uuid()) @db.Uuid
+  postId    String   @map("post_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  post BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User     @relation("BlogBookmarks", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@map("blog_bookmarks")
+}
+
+/// Просмотры постов
+model BlogView {
+  id        String   @id @default(uuid()) @db.Uuid
+  postId    String   @map("post_id") @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid // null для анонимов
+  ipAddress String?  @map("ip_address") @db.VarChar(45)
+  userAgent String?  @map("user_agent") @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  post BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User?    @relation("BlogViews", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([postId, createdAt])
+  @@map("blog_views")
+}
+
+/// Комментарии к постам
+model BlogComment {
+  id        String   @id @default(uuid()) @db.Uuid
+  postId    String   @map("post_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  parentId  String?  @map("parent_id") @db.Uuid // для вложенных комментариев
+  content   String   @db.Text
+  likes     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at") // soft delete
+
+  post    BlogPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user    User          @relation("BlogComments", fields: [userId], references: [id], onDelete: Cascade)
+  parent  BlogComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies BlogComment[] @relation("CommentReplies")
+
+  @@index([postId, createdAt])
+  @@index([userId])
+  @@index([parentId])
+  @@map("blog_comments")
+}

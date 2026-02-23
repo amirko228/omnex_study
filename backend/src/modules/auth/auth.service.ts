@@ -15,7 +15,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
-import * as net from 'net';
+import * as nodemailer from 'nodemailer';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { RedisService } from '../../common/redis/redis.service';
 import { RegisterDto, LoginDto } from './dto/auth.dto';
@@ -36,9 +36,10 @@ export class AuthService {
     // РЕГИСТРАЦИЯ
     // ==========================================
     async register(dto: RegisterDto) {
-        // Проверяем, не занят ли email
-        const existingUser = await this.prisma.user.findUnique({
-            where: { email: dto.email },
+        const email = dto.email.toLowerCase().trim();
+
+        const existingUser = await this.prisma.user.findFirst({
+            where: { email, deletedAt: null },
         });
 
         if (existingUser) {
@@ -51,7 +52,7 @@ export class AuthService {
         // Создаём пользователя в БД
         const user = await this.prisma.user.create({
             data: {
-                email: dto.email,
+                email, // Использовать нормализованный email
                 passwordHash,
                 name: dto.name,
                 locale: dto.locale || 'ru',
@@ -95,9 +96,11 @@ export class AuthService {
     // ЛОГИН
     // ==========================================
     async login(dto: LoginDto) {
-        // Ищем пользователя по email
-        const user = await this.prisma.user.findUnique({
-            where: { email: dto.email },
+        const email = dto.email.toLowerCase().trim();
+
+        // Ищем пользователя по email (только активного)
+        const user = await this.prisma.user.findFirst({
+            where: { email, deletedAt: null },
             select: {
                 id: true,
                 email: true,
@@ -108,10 +111,15 @@ export class AuthService {
                 subscriptionPlan: true,
                 passwordHash: true,
                 twoFactorEnabled: true,
+                deletedAt: true,
             },
         });
 
-        if (!user || !user.passwordHash) {
+        if (!user || user.deletedAt) {
+            throw new UnauthorizedException('Аккаунт удалён или не существует');
+        }
+
+        if (!user.passwordHash) {
             throw new UnauthorizedException('Неверный email или пароль');
         }
 
@@ -159,6 +167,10 @@ export class AuthService {
 
         if (!savedToken) {
             throw new UnauthorizedException('Невалидный refresh token');
+        }
+
+        if (savedToken.user.deletedAt) {
+            throw new UnauthorizedException('Аккаунт удалён');
         }
 
         // Проверяем срок действия
@@ -222,22 +234,31 @@ export class AuthService {
                 country: true,
                 timezone: true,
                 createdAt: true,
+                passwordHash: true,
+                deletedAt: true,
             },
         });
 
-        if (!user) {
+        if (!user || user.deletedAt) {
             throw new NotFoundException('Пользователь не найден');
         }
 
-        return user;
+        const { passwordHash, ...userWithoutPassword } = user;
+
+        return {
+            ...userWithoutPassword,
+            hasPassword: !!passwordHash,
+        };
     }
 
     // ==========================================
     // ЗАПРОС СБРОСА ПАРОЛЯ
     // ==========================================
-    async requestPasswordReset(email: string) {
-        const user = await this.prisma.user.findUnique({
-            where: { email },
+    async requestPasswordReset(emailRaw: string) {
+        const email = emailRaw.toLowerCase().trim();
+
+        const user = await this.prisma.user.findFirst({
+            where: { email, deletedAt: null },
         });
 
         if (!user) {
@@ -289,7 +310,8 @@ export class AuthService {
     // ==========================================
     // ПОДТВЕРЖДЕНИЕ СБРОСА ПАРОЛЯ (по коду)
     // ==========================================
-    async confirmPasswordReset(email: string, code: string, newPassword: string) {
+    async confirmPasswordReset(emailRaw: string, code: string, newPassword: string) {
+        const email = emailRaw.toLowerCase().trim();
         const savedCode = await this.redis.get(`password:reset:${email}`);
 
         if (!savedCode) {
@@ -301,7 +323,7 @@ export class AuthService {
         }
 
         // Находим пользователя
-        const user = await this.prisma.user.findUnique({ where: { email } });
+        const user = await this.prisma.user.findFirst({ where: { email, deletedAt: null } });
         if (!user) {
             throw new BadRequestException('Пользователь не найден');
         }
@@ -449,112 +471,46 @@ export class AuthService {
         }
     }
 
-    // Простая отправка через SMTP без внешних зависимостей
-    private sendSmtpEmail(opts: { host: string; port: number; user: string; pass: string; from: string; to: string; subject: string; html: string }): Promise<void> {
-        return new Promise((resolve, reject) => {
-            const socket = net.createConnection(opts.port, opts.host, () => {
-                const lines: string[] = [];
-                let step = 0;
+    // Отправка email через nodemailer
+    private async sendSmtpEmail(opts: { host: string; port: number; user: string; pass: string; from: string; to: string; subject: string; html: string }): Promise<void> {
+        const transporter = nodemailer.createTransport({
+            host: opts.host,
+            port: opts.port,
+            secure: opts.port === 465,
+            auth: {
+                user: opts.user,
+                pass: opts.pass,
+            },
+        });
 
-                socket.on('data', (data) => {
-                    const resp = data.toString();
-                    lines.push(resp);
-
-                    try {
-                        switch (step) {
-                            case 0: // greeting
-                                socket.write(`EHLO omnexstudy.com\r\n`);
-                                step++;
-                                break;
-                            case 1: // EHLO response
-                                if (resp.includes('STARTTLS')) {
-                                    socket.write(`STARTTLS\r\n`);
-                                } else {
-                                    socket.write(`AUTH LOGIN\r\n`);
-                                }
-                                step++;
-                                break;
-                            case 2:
-                                socket.write(`AUTH LOGIN\r\n`);
-                                step++;
-                                break;
-                            case 3:
-                                socket.write(Buffer.from(opts.user).toString('base64') + '\r\n');
-                                step++;
-                                break;
-                            case 4:
-                                socket.write(Buffer.from(opts.pass).toString('base64') + '\r\n');
-                                step++;
-                                break;
-                            case 5:
-                                if (resp.startsWith('535') || resp.includes('Authentication')) {
-                                    socket.destroy();
-                                    reject(new Error('SMTP: Ошибка аутентификации'));
-                                    return;
-                                }
-                                socket.write(`MAIL FROM:<${opts.from}>\r\n`);
-                                step++;
-                                break;
-                            case 6:
-                                socket.write(`RCPT TO:<${opts.to}>\r\n`);
-                                step++;
-                                break;
-                            case 7:
-                                socket.write(`DATA\r\n`);
-                                step++;
-                                break;
-                            case 8:
-                                const msg = [
-                                    `From: Omnex Study <${opts.from}>`,
-                                    `To: ${opts.to}`,
-                                    `Subject: ${opts.subject}`,
-                                    `MIME-Version: 1.0`,
-                                    `Content-Type: text/html; charset=utf-8`,
-                                    ``,
-                                    opts.html,
-                                    `.`,
-                                ].join('\r\n');
-                                socket.write(msg + '\r\n');
-                                step++;
-                                break;
-                            case 9:
-                                socket.write(`QUIT\r\n`);
-                                socket.destroy();
-                                resolve();
-                                break;
-                        }
-                    } catch (e) {
-                        reject(e);
-                    }
-                });
-
-                socket.on('error', reject);
-                socket.setTimeout(10000, () => {
-                    socket.destroy();
-                    reject(new Error('SMTP timeout'));
-                });
-            });
-
-            socket.on('error', reject);
+        await transporter.sendMail({
+            from: `Omnex Study <${opts.from}>`,
+            to: opts.to,
+            subject: opts.subject,
+            html: opts.html,
         });
     }
 
-    // ==========================================
-    // СМЕНА ПАРОЛЯ
-    // ==========================================
-    async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    async changePassword(userId: string, currentPassword: string | undefined, newPassword: string) {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
         });
 
-        if (!user || !user.passwordHash) {
-            throw new BadRequestException('Невозможно сменить пароль');
+        if (!user) {
+            throw new BadRequestException('Пользователь не найден');
         }
 
-        const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
-        if (!isValid) {
-            throw new UnauthorizedException('Текущий пароль неверный');
+        // Если у пользователя уже есть пароль, проверяем текущий
+        if (user.passwordHash) {
+            if (!currentPassword) {
+                throw new BadRequestException('Текущий пароль обязателен');
+            }
+            const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+            if (!isValid) {
+                throw new UnauthorizedException('Текущий пароль неверный');
+            }
         }
+        // Если пароля нет (OAuth), currentPassword не обязателен или игнорируется
 
         const passwordHash = await bcrypt.hash(newPassword, 12);
         await this.prisma.user.update({
@@ -571,7 +527,12 @@ export class AuthService {
 
     // Генерация пары JWT токенов
     private async generateTokens(userId: string, email: string, role: string) {
-        const payload: JwtPayload = { sub: userId, email, role };
+        const payload: JwtPayload = {
+            sub: userId,
+            email,
+            role,
+            jti: uuidv4() // Добавляем уникальный ID токена для предотвращения коллизий
+        };
 
         const [accessToken, refreshToken] = await Promise.all([
             this.jwtService.signAsync(payload, {
@@ -709,14 +670,14 @@ export class AuthService {
     // ==========================================
     // OAuth — Обработка callback
     // ==========================================
-    async oauthCallback(provider: string, code: string) {
+    async oauthCallback(provider: string, code: string, redirectUri?: string) {
         let email: string;
         let name: string;
         let providerAccountId: string;
 
         try {
             // Обмен code на данные пользователя от провайдера
-            const userData = await this.exchangeOAuthCode(provider, code);
+            const userData = await this.exchangeOAuthCode(provider, code, redirectUri);
             email = userData.email;
             name = userData.name;
             providerAccountId = userData.id;
@@ -726,6 +687,9 @@ export class AuthService {
             name = `${provider.charAt(0).toUpperCase() + provider.slice(1)} User`;
             providerAccountId = code;
         }
+
+        // Нормализуем email
+        email = email.toLowerCase().trim();
 
         // Ищем пользователя по OAuth аккаунту
         const existingOAuth = await this.prisma.oAuthAccount.findFirst({
@@ -739,9 +703,9 @@ export class AuthService {
             // Пользователь уже авторизовывался через этот провайдер
             user = existingOAuth.user;
         } else {
-            // Ищем по email
-            user = await this.prisma.user.findUnique({
-                where: { email },
+            // Ищем по email (только активного)
+            user = await this.prisma.user.findFirst({
+                where: { email, deletedAt: null },
             });
 
             if (!user) {
@@ -766,6 +730,10 @@ export class AuthService {
             });
         }
 
+        if (user.deletedAt) {
+            throw new UnauthorizedException('Ваш аккаунт был удалён');
+        }
+
         const tokens = await this.generateTokens(user.id, user.email, user.role);
         await this.saveRefreshToken(user.id, tokens.refreshToken);
 
@@ -786,24 +754,24 @@ export class AuthService {
     // ==========================================
     // Обмен OAuth code на данные пользователя
     // ==========================================
-    private async exchangeOAuthCode(provider: string, code: string): Promise<{ id: string; email: string; name: string }> {
+    private async exchangeOAuthCode(provider: string, code: string, redirectUri?: string): Promise<{ id: string; email: string; name: string }> {
         switch (provider) {
             case 'google':
-                return this.exchangeGoogleCode(code);
+                return this.exchangeGoogleCode(code, redirectUri);
             case 'vk':
-                return this.exchangeVkCode(code);
+                return this.exchangeVkCode(code, redirectUri);
             case 'yandex':
-                return this.exchangeYandexCode(code);
+                return this.exchangeYandexCode(code, redirectUri);
             default:
                 throw new BadRequestException(`Неподдерживаемый провайдер: ${provider}`);
         }
     }
 
     // Google: code → token → userinfo
-    private async exchangeGoogleCode(code: string): Promise<{ id: string; email: string; name: string }> {
+    private async exchangeGoogleCode(code: string, frontendRedirectUri?: string): Promise<{ id: string; email: string; name: string }> {
         const clientId = this.configService.get('GOOGLE_CLIENT_ID');
         const clientSecret = this.configService.get('GOOGLE_CLIENT_SECRET');
-        const redirectUri = this.configService.get('GOOGLE_CALLBACK_URL', 'http://localhost:3000/auth/callback');
+        const redirectUri = frontendRedirectUri || this.configService.get('GOOGLE_CALLBACK_URL') || this.configService.get('FRONTEND_URL', 'http://localhost:3000') + '/auth/callback';
 
         if (!clientId || !clientSecret) throw new Error('Google OAuth не настроен');
 
@@ -836,10 +804,10 @@ export class AuthService {
     }
 
     // VK: code → token + email
-    private async exchangeVkCode(code: string): Promise<{ id: string; email: string; name: string }> {
+    private async exchangeVkCode(code: string, frontendRedirectUri?: string): Promise<{ id: string; email: string; name: string }> {
         const clientId = this.configService.get('VK_CLIENT_ID');
         const clientSecret = this.configService.get('VK_CLIENT_SECRET');
-        const redirectUri = this.configService.get('VK_CALLBACK_URL', 'http://localhost:3000/auth/callback');
+        const redirectUri = frontendRedirectUri || this.configService.get('VK_CALLBACK_URL') || this.configService.get('FRONTEND_URL', 'http://localhost:3000') + '/auth/callback';
 
         if (!clientId || !clientSecret) throw new Error('VK OAuth не настроен');
 
@@ -863,9 +831,10 @@ export class AuthService {
     }
 
     // Yandex: code → token → userinfo
-    private async exchangeYandexCode(code: string): Promise<{ id: string; email: string; name: string }> {
+    private async exchangeYandexCode(code: string, frontendRedirectUri?: string): Promise<{ id: string; email: string; name: string }> {
         const clientId = this.configService.get('YANDEX_CLIENT_ID');
         const clientSecret = this.configService.get('YANDEX_CLIENT_SECRET');
+        const redirectUri = frontendRedirectUri || this.configService.get('YANDEX_CALLBACK_URL') || this.configService.get('FRONTEND_URL', 'http://localhost:3000') + '/auth/callback';
 
         if (!clientId || !clientSecret) throw new Error('Yandex OAuth не настроен');
 
@@ -878,6 +847,7 @@ export class AuthService {
                 code,
                 client_id: clientId,
                 client_secret: clientSecret,
+                redirect_uri: redirectUri,
             }),
         });
         const tokenData = await tokenRes.json();

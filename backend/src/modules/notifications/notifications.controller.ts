@@ -103,5 +103,16 @@ export class NotificationsController {
     async deleteAll(@CurrentUser('id') userId: string) {
         return this.notificationsService.deleteAll(userId);
     }
+
+    // POST /notifications/support — отправка email в поддержку (Help Center)
+    @Post('support')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Отправить email в поддержку' })
+    async sendSupportEmail(
+        @CurrentUser('id') userId: string,
+        @Body() body: { subject: string; message: string },
+    ) {
+        return this.notificationsService.sendSupportEmail(userId, body.subject, body.message);
+    }
 }
 

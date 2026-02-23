@@ -115,8 +115,11 @@ export class UsersController {
     // DELETE /users/me — Удалить аккаунт
     @Delete('me')
     @ApiOperation({ summary: 'Удалить аккаунт' })
-    async deleteAccount(@CurrentUser('id') userId: string) {
-        return this.usersService.deleteAccount(userId);
+    async deleteAccount(
+        @CurrentUser('id') userId: string,
+        @Body() body: { password?: string },
+    ) {
+        return this.usersService.deleteAccount(userId, body.password);
     }
 
     // GET /users/:id — Профиль по ID (только админ)

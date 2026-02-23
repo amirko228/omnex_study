@@ -218,7 +218,8 @@ export class AuthController {
         @Param('provider') provider: string,
         @Query('redirectUri') redirectUri: string,
     ) {
-        return this.authService.getOAuthUrl(provider, redirectUri || 'http://localhost:3000/auth/callback');
+        const defaultRedirect = (process.env.FRONTEND_URL || 'http://localhost:3000') + '/auth/callback';
+        return this.authService.getOAuthUrl(provider, redirectUri || defaultRedirect);
     }
 
     // ==========================================
@@ -232,7 +233,7 @@ export class AuthController {
         @Param('provider') provider: string,
         @Body() dto: OAuthCallbackDto,
     ) {
-        return this.authService.oauthCallback(provider, dto.code);
+        return this.authService.oauthCallback(provider, dto.code, dto.redirectUri);
     }
 }
 

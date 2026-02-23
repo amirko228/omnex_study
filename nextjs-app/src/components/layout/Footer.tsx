@@ -2,6 +2,7 @@
 
 import { OmnexLogo } from '@/components/layout/omnex-logo';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
+import { config } from '@/lib/config';
 
 interface FooterProps {
     dict: Dictionary;
@@ -59,27 +60,37 @@ export const Footer = ({ dict, onNavigate }: FooterProps) => {
                         <ul className="space-y-2 text-sm text-muted-foreground">
                             <li>
                                 <a
-                                    href="https://twitter.com"
+                                    href={config.social.telegram}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="hover:text-primary transition-colors"
                                 >
-                                    {dict?.footer?.twitter || 'Twitter'}
+                                    {dict?.footer?.telegram || 'Telegram'}
                                 </a>
                             </li>
                             <li>
                                 <a
-                                    href="https://linkedin.com"
+                                    href={config.social.youtube}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="hover:text-primary transition-colors"
                                 >
-                                    {dict?.footer?.linkedin || 'LinkedIn'}
+                                    {dict?.footer?.youtube || 'YouTube'}
                                 </a>
                             </li>
                             <li>
                                 <a
-                                    href="https://instagram.com"
+                                    href={config.social.threads}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:text-primary transition-colors"
+                                >
+                                    {dict?.footer?.threads || 'Threads'}
+                                </a>
+                            </li>
+                            <li>
+                                <a
+                                    href={config.social.instagram}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="hover:text-primary transition-colors"

@@ -34,6 +34,7 @@ export default function BlogPage() {
             locale={locale}
             onNavigateToPost={handleNavigateToPost}
             onNavigateToRegister={handleNavigateToRegister}
+            isAuthenticated={isAuthenticated}
         />
     );
 }

@@ -98,4 +98,17 @@ export const notificationsApi = {
   async sendTestNotification(): Promise<ApiResponse<void>> {
     return apiClient.post<void>('/notifications/test');
   },
+
+  /**
+   * Отправить email в поддержку (Help Center)
+   */
+  async sendSupportEmail(data: {
+    subject: string;
+    message: string;
+  }): Promise<ApiResponse<{ success: boolean; message: string }>> {
+    return apiClient.post<{ success: boolean; message: string }>(
+      '/notifications/support',
+      data
+    );
+  },
 };

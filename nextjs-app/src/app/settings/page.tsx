@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function SettingsPage() {
-    const { dict, isAuthenticated, locale, user, setLocale, logout } = useAppContext();
+    const { dict, isAuthenticated, locale, user, setLocale, logout, refetchUser } = useAppContext();
     const router = useRouter();
 
     useEffect(() => {
@@ -30,6 +30,7 @@ export default function SettingsPage() {
             user={user}
             onDeleteAccount={logout}
             onLocaleChange={setLocale}
+            refetchUser={refetchUser}
         />
     );
 }

@@ -83,8 +83,8 @@ export function LessonChat({ dict, initialMessages = [] }: LessonChatProps) {
                 )}
                 <div
                   className={`rounded-lg px-4 py-2 max-w-[80%] ${message.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted'
                     }`}
                 >
                   <p className="text-sm">{message.content}</p>

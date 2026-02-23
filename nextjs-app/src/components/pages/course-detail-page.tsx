@@ -9,7 +9,8 @@ import { ArrowRight, Check, Star, BookOpen, Clock } from 'lucide-react';
 import { DictionaryFallback } from '@/components/ui/dictionary-fallback';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 
-import type { Course, Lesson } from '@/types';
+import { ReviewsSection } from '@/components/reviews/reviews-section';
+import { getUserIdFromToken } from '@/lib/utils/auth-helpers';
 
 interface CourseDetailPageProps {
     dict: Dictionary;
@@ -22,6 +23,9 @@ export const CourseDetailPage = ({ dict, selectedCourse, setCurrentPage }: Cours
     if (!dict?.course) {
         return <DictionaryFallback />;
     }
+
+    // Получаем userId из токена
+    const currentUserId = getUserIdFromToken();
 
     return (
         <div className="container mx-auto px-4 py-10">
@@ -120,13 +124,11 @@ export const CourseDetailPage = ({ dict, selectedCourse, setCurrentPage }: Cours
                         </TabsContent>
 
                         <TabsContent value="reviews" className="focus-visible:outline-none">
-                            <div className="text-center py-20 bg-muted/20 rounded-2xl border-2 border-dashed">
-                                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                                    <Star className="h-6 w-6 text-primary" />
-                                </div>
-                                <h3 className="text-xl font-bold mb-2">{dict.course.no_reviews}</h3>
-                                <p className="text-muted-foreground">{dict.course.be_first_review}</p>
-                            </div>
+                            <ReviewsSection
+                                courseId={selectedCourse.id}
+                                currentUserId={currentUserId || undefined}
+                                dict={dict}
+                            />
                         </TabsContent>
                     </Tabs>
                 </div>

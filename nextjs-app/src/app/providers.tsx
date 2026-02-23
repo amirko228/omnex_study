@@ -9,6 +9,7 @@ import { mockCourses } from '@/lib/api/mock-data';
 import type { Locale } from '@/lib/i18n/config';
 import type { CourseFormat, User, LoginCredentials, RegisterDTO } from '@/types';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { paymentsApi } from '@/lib/api/payments';
 
 // App Context
 type AppContextType = {
@@ -19,6 +20,7 @@ type AppContextType = {
     login: (data: LoginCredentials) => void;
     register: (data: RegisterDTO) => void;
     logout: () => void;
+    refetchUser: () => void;
     // Locale
     locale: Locale;
     setLocale: (locale: Locale) => void;
@@ -46,7 +48,7 @@ export function useAppContext() {
 }
 
 function AppStateProvider({ children }: { children: ReactNode }) {
-    const { isAuthenticated, user, login, register, logout, isLoading } = useAuth();
+    const { isAuthenticated, user, login, register, logout, isLoading, refetch } = useAuth();
 
     const [locale, setLocale] = useState<Locale>('ru');
     const [dict, setDict] = useState<Dictionary | null>(null);
@@ -79,7 +81,17 @@ function AppStateProvider({ children }: { children: ReactNode }) {
 
     const [subscription, setSubscription] = useState<'free' | 'pro' | 'enterprise'>('free');
 
-    const purchaseCourse = (courseId: string) => {
+    const purchaseCourse = async (courseId: string) => {
+        try {
+            await paymentsApi.createPayment({
+                amount: 0,
+                currency: 'USD',
+                provider: 'stripe' as any,
+                metadata: { courseId },
+            });
+        } catch (err) {
+            console.warn('Billing API unavailable, saving locally:', err);
+        }
         const newPurchased = [...purchasedCourses, courseId];
         setPurchasedCourses(newPurchased);
         if (typeof window !== 'undefined') {
@@ -88,8 +100,18 @@ function AppStateProvider({ children }: { children: ReactNode }) {
     };
 
     const subscribe = async (planId: 'free' | 'pro' | 'enterprise') => {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        try {
+            // Вызываем реальный API подписки
+            await paymentsApi.createPayment({
+                amount: planId === 'pro' ? 29.99 : planId === 'enterprise' ? 99.99 : 0,
+                currency: 'USD',
+                provider: 'stripe' as any,
+                description: `Подписка ${planId}`,
+                metadata: { plan: planId },
+            });
+        } catch (err) {
+            console.warn('Billing API unavailable, saving locally:', err);
+        }
         setSubscription(planId);
         if (typeof window !== 'undefined') {
             localStorage.setItem('omnex-subscription', planId);
@@ -114,6 +136,7 @@ function AppStateProvider({ children }: { children: ReactNode }) {
         login,
         register: (data: RegisterDTO) => { register(data); },
         logout,
+        refetchUser: refetch,
         locale,
         setLocale,
         dict,

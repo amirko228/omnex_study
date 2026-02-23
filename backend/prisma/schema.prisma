@@ -18,41 +18,50 @@ datasource db {
 
 /// Основная таблица пользователей
 model User {
-  id                String    @id @default(uuid()) @db.Uuid
-  email             String    @unique @db.VarChar(255)
-  passwordHash      String?   @map("password_hash") @db.VarChar(255)
-  name              String    @db.VarChar(255)
-  avatar            String?
-  role              String    @default("user") @db.VarChar(50) // user | admin
-  locale            String    @default("ru") @db.VarChar(10)
-  emailVerified     Boolean   @default(false) @map("email_verified")
-  twoFactorEnabled  Boolean   @default(false) @map("two_factor_enabled")
-  twoFactorSecret   String?   @map("two_factor_secret") @db.VarChar(255)
-  subscriptionPlan  String    @default("free") @map("subscription_plan") @db.VarChar(50)
-  bio               String?
-  phone             String?   @db.VarChar(50)
-  country           String?   @db.VarChar(100)
-  timezone          String?   @db.VarChar(100)
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
-  deletedAt         DateTime? @map("deleted_at")
+  id               String    @id @default(uuid()) @db.Uuid
+  email            String    @db.VarChar(255)
+  passwordHash     String?   @map("password_hash") @db.VarChar(255)
+  name             String    @db.VarChar(255)
+  avatar           String?
+  role             String    @default("user") @db.VarChar(50) // user | admin
+  locale           String    @default("ru") @db.VarChar(10)
+  emailVerified    Boolean   @default(false) @map("email_verified")
+  twoFactorEnabled Boolean   @default(false) @map("two_factor_enabled")
+  twoFactorSecret  String?   @map("two_factor_secret") @db.VarChar(255)
+  subscriptionPlan String    @default("free") @map("subscription_plan") @db.VarChar(50)
+  bio              String?
+  phone            String?   @db.VarChar(50)
+  country          String?   @db.VarChar(100)
+  timezone         String?   @db.VarChar(100)
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  deletedAt        DateTime? @map("deleted_at")
 
   // Связи
-  oauthAccounts          OAuthAccount[]
-  refreshTokens          RefreshToken[]
-  passwordResetTokens    PasswordResetToken[]
+  oauthAccounts           OAuthAccount[]
+  refreshTokens           RefreshToken[]
+  passwordResetTokens     PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
-  courses                Course[]       @relation("AuthorCourses")
-  enrollments            Enrollment[]
-  progress               UserProgress[]
-  reviews                Review[]
-  subscriptions          Subscription[]
-  payments               Payment[]
-  aiChats                AIChat[]
-  notifications          Notification[]
-  analyticsEvents        AnalyticsEvent[]
-  auditLogs              AuditLog[]
-  quizAttempts           QuizAttempt[]
+  courses                 Course[]                 @relation("AuthorCourses")
+  enrollments             Enrollment[]
+  progress                UserProgress[]
+  reviews                 Review[]
+  subscriptions           Subscription[]
+  payments                Payment[]
+  chatSessions            ChatSession[]            @relation("UserChatSessions")
+  notifications           Notification[]
+  analyticsEvents         AnalyticsEvent[]
+  auditLogs               AuditLog[]
+  quizAttempts            QuizAttempt[]
+
+  // Blog relations
+  blogPosts     BlogPost[]
+  blogLikes     BlogLike[]
+  blogBookmarks BlogBookmark[]
+  blogComments  BlogComment[]
+
+  // AI relations
+  aiChats AIChat[]
 
   @@map("users")
 }
@@ -128,7 +137,7 @@ model Course {
   thumbnail          String?
   coverImage         String?   @map("cover_image")
   category           String?   @db.VarChar(100)
-  tags               String[]  // PostgreSQL array
+  tags               String[] // PostgreSQL array
   level              String?   @db.VarChar(50) // beginner | intermediate | advanced
   language           String    @default("ru") @db.VarChar(10)
   availableLanguages String[]  @map("available_languages")
@@ -141,19 +150,19 @@ model Course {
   rating             Decimal   @default(0) @db.Decimal(3, 2)
   reviewsCount       Int       @default(0) @map("reviews_count")
   enrolledCount      Int       @default(0) @map("enrolled_count")
-  formats            String[]  // text | quiz | chat | assignment
+  formats            String[] // text | quiz | chat | assignment
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
   deletedAt          DateTime? @map("deleted_at")
 
   // Связи
-  author        User?            @relation("AuthorCourses", fields: [authorId], references: [id])
-  modules       CourseModule[]
-  enrollments   Enrollment[]
-  reviews       Review[]
-  payments      Payment[]
-  aiChats       AIChat[]
-  aiGenerated   AIGeneratedCourse[]
+  author      User?               @relation("AuthorCourses", fields: [authorId], references: [id])
+  modules     CourseModule[]
+  enrollments Enrollment[]
+  reviews     Review[]
+  payments    Payment[]
+  aiGenerated AIGeneratedCourse[]
+  aiChats     AIChat[]
 
   @@index([category])
   @@index([level])
@@ -164,7 +173,7 @@ model Course {
 /// Модули курса (разделы)
 model CourseModule {
   id              String   @id @default(uuid()) @db.Uuid
-  courseId         String   @map("course_id") @db.Uuid
+  courseId        String   @map("course_id") @db.Uuid
   title           String   @db.VarChar(500)
   description     String?
   orderIndex      Int      @map("order_index")
@@ -194,7 +203,7 @@ model Lesson {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   // Связи
-  module   CourseModule    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  module   CourseModule   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   quizzes  Quiz[]
   progress UserProgress[]
   aiChats  AIChat[]
@@ -227,7 +236,7 @@ model QuizQuestion {
   id            String   @id @default(uuid()) @db.Uuid
   quizId        String   @map("quiz_id") @db.Uuid
   question      String
-  options       Json     // ['option1', 'option2', ...]
+  options       Json // ['option1', 'option2', ...]
   correctAnswer Int      @map("correct_answer")
   explanation   String?
   points        Int      @default(1)
@@ -244,7 +253,7 @@ model QuizAttempt {
   id          String   @id @default(uuid()) @db.Uuid
   quizId      String   @map("quiz_id") @db.Uuid
   userId      String   @map("user_id") @db.Uuid
-  answers     Json     // {questionId: answerIndex}
+  answers     Json // {questionId: answerIndex}
   score       Int
   passed      Boolean
   completedAt DateTime @default(now()) @map("completed_at")
@@ -264,7 +273,7 @@ model QuizAttempt {
 model Enrollment {
   id         String   @id @default(uuid()) @db.Uuid
   userId     String   @map("user_id") @db.Uuid
-  courseId    String   @map("course_id") @db.Uuid
+  courseId   String   @map("course_id") @db.Uuid
   enrolledAt DateTime @default(now()) @map("enrolled_at")
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -302,9 +311,9 @@ model UserProgress {
 /// Отзывы на курсы
 model Review {
   id        String   @id @default(uuid()) @db.Uuid
-  courseId   String   @map("course_id") @db.Uuid
+  courseId  String   @map("course_id") @db.Uuid
   userId    String   @map("user_id") @db.Uuid
-  rating    Int      // 1-5
+  rating    Int // 1-5
   comment   String?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -316,6 +325,86 @@ model Review {
   @@index([courseId])
   @@index([userId])
   @@map("reviews")
+}
+
+// ============================================================================
+// БЛОГ
+// ============================================================================
+
+model BlogPost {
+  id          String    @id @default(uuid()) @db.Uuid
+  slug        String    @unique @db.VarChar(255)
+  title       String    @db.VarChar(500)
+  excerpt     String    @db.Text
+  content     String    @db.Text
+  coverImage  String?   @map("cover_image")
+  category    String    @db.VarChar(100)
+  tags        String[]
+  readTime    Int       @default(5) @map("read_time")
+  published   Boolean   @default(false)
+  views       Int       @default(0)
+  likes       Int       @default(0)
+  bookmarks   Int       @default(0)
+  publishedAt DateTime? @map("published_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  authorId String @map("author_id") @db.Uuid
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  userLikes     BlogLike[]
+  userBookmarks BlogBookmark[]
+  comments      BlogComment[]
+
+  @@index([category])
+  @@index([authorId])
+  @@map("blog_posts")
+}
+
+model BlogLike {
+  id        String   @id @default(uuid()) @db.Uuid
+  postId    String   @map("post_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  post BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@map("blog_likes")
+}
+
+model BlogBookmark {
+  id        String   @id @default(uuid()) @db.Uuid
+  postId    String   @map("post_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  post BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@map("blog_bookmarks")
+}
+
+model BlogComment {
+  id        String    @id @default(uuid()) @db.Uuid
+  postId    String    @map("post_id") @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  parentId  String?   @map("parent_id") @db.Uuid
+  content   String    @db.Text
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  post   BlogPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent BlogComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies BlogComment[] @relation("CommentReplies")
+
+  @@index([postId])
+  @@index([userId])
+  @@map("blog_comments")
 }
 
 // ============================================================================
@@ -346,7 +435,7 @@ model Payment {
   id                String   @id @default(uuid()) @db.Uuid
   userId            String   @map("user_id") @db.Uuid
   subscriptionId    String?  @map("subscription_id") @db.Uuid
-  courseId           String?  @map("course_id") @db.Uuid
+  courseId          String?  @map("course_id") @db.Uuid
   amount            Decimal  @db.Decimal(10, 2)
   currency          String   @default("USD") @db.VarChar(10)
   provider          String?  @db.VarChar(50) // stripe | cloudpayments | yoomoney
@@ -386,7 +475,7 @@ model PromoCode {
 model AIChat {
   id        String   @id @default(uuid()) @db.Uuid
   userId    String   @map("user_id") @db.Uuid
-  courseId   String?  @map("course_id") @db.Uuid
+  courseId  String?  @map("course_id") @db.Uuid
   lessonId  String?  @map("lesson_id") @db.Uuid
   type      String?  @db.VarChar(50) // tutor | course_creation | general
   createdAt DateTime @default(now()) @map("created_at")
@@ -418,7 +507,7 @@ model AIMessage {
 model AIGeneratedCourse {
   id               String   @id @default(uuid()) @db.Uuid
   userId           String?  @map("user_id") @db.Uuid
-  courseId          String?  @map("course_id") @db.Uuid
+  courseId         String?  @map("course_id") @db.Uuid
   prompt           String
   generationParams Json?    @map("generation_params")
   tokensUsed       Int?     @map("tokens_used")
@@ -486,4 +575,40 @@ model AuditLog {
   @@index([userId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ============================================================================
+// AI CHAT HISTORY
+// ============================================================================
+
+/// ������ AI-����� ��� �������� ������
+model ChatSession {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  title     String   @default("New Chat") @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User          @relation("UserChatSessions", fields: [userId], references: [id], onDelete: Cascade)
+  messages ChatMessage[]
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("chat_sessions")
+}
+
+/// ��������� � AI-�����
+model ChatMessage {
+  id        String   @id @default(uuid()) @db.Uuid
+  sessionId String   @map("session_id") @db.Uuid
+  role      String   @db.VarChar(20) // 'user' | 'ai'
+  content   String   @db.Text
+  metadata  Json? // courseData, generationSteps, files, etc
+  createdAt DateTime @default(now()) @map("created_at")
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([createdAt])
+  @@map("chat_messages")
 }

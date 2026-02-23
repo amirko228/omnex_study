@@ -21,9 +21,11 @@ import {
     Globe,
     Palette,
     Briefcase,
-    Cpu
+    Cpu,
+    Trash2
 } from 'lucide-react';
 import { aiService, type DifficultyLevel, type LessonFormat } from '@/lib/ai/ai-service';
+import { useChatSession } from '@/lib/hooks/useChatSession';
 import type { Locale } from '@/lib/i18n/config';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 import { useRouter } from 'next/navigation';
@@ -58,6 +60,7 @@ export function AICourseCreatorChat({
     onCourseGenerated
 }: AICourseCreatorChatProps) {
     const router = useRouter();
+    const { sessionId, saveMessage, clearChat, loadHistory } = useChatSession();
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -91,6 +94,61 @@ export function AICourseCreatorChat({
             scrollToBottom();
         }
     }, [messages.length]);
+
+    // Загрузить историю чата при создании сессии (только один раз)
+    useEffect(() => {
+        let hasLoadedHistory = false;
+
+        async function loadChatHistory() {
+            if (!sessionId || hasLoadedHistory) return;
+            hasLoadedHistory = true;
+
+            try {
+                console.log('[AI Chat] Loading history for session:', sessionId);
+                const history = await loadHistory();
+
+                if (history && history.length > 0) {
+                    console.log('[AI Chat] Loaded history:', history.length, 'messages');
+                    // Преобразуем в формат Message компонента с правильными типами
+                    const formattedHistory = history.map((msg: any) => {
+                        const baseMessage = {
+                            id: msg.id,
+                            role: msg.role,
+                            content: msg.content,
+                            timestamp: msg.timestamp,
+                        };
+
+                        // Восстанавливаем тип и специфичные поля из metadata
+                        if (msg.metadata?.type === 'course-preview' && msg.metadata?.courseData) {
+                            return {
+                                ...baseMessage,
+                                type: 'course-preview' as const,
+                                courseData: msg.metadata.courseData,
+                            };
+                        } else if (msg.metadata?.type === 'generating' && msg.metadata?.generationSteps) {
+                            return {
+                                ...baseMessage,
+                                type: 'generating' as const,
+                                generationSteps: msg.metadata.generationSteps,
+                            };
+                        } else {
+                            return {
+                                ...baseMessage,
+                                type: 'text' as const,
+                            };
+                        }
+                    });
+                    setMessages(formattedHistory);
+                } else {
+                    console.log('[AI Chat] No history found for this session');
+                }
+            } catch (error) {
+                console.error('[AI Chat] Failed to load history:', error);
+            }
+        }
+
+        loadChatHistory();
+    }, [sessionId]); // Только sessionId в зависимостях
 
     // Парсинг запроса пользователя
     const parseUserRequest = (text: string): { topic: string; level: DifficultyLevel; duration: number; formats: LessonFormat[] } => {
@@ -142,6 +200,13 @@ export function AICourseCreatorChat({
         setInput('');
         setIsLoading(true);
 
+        // Сохранить user message в БД
+        if (sessionId) {
+            saveMessage('user', userMessage.content).catch(err =>
+                console.error('Failed to save user message:', err)
+            );
+        }
+
         const userInput = textToSend.trim();
         const createKeywords = ['создай', 'сделай', 'курс', 'научи', 'изучить', 'create', 'make', 'course', 'teach', 'learn', 'want to know'];
         const wantsToCreate = createKeywords.some(kw => userInput.toLowerCase().includes(kw));
@@ -164,6 +229,13 @@ export function AICourseCreatorChat({
             setMessages(prev => [...prev, previewMessage]);
             setIsLoading(false);
 
+            // Сохранить course-preview message в БД с metadata
+            if (sessionId) {
+                saveMessage('ai', previewMessage.content, { type: 'course-preview', courseData: courseParams }).catch(err =>
+                    console.error('Failed to save course-preview message:', err)
+                );
+            }
+
             setTimeout(() => {
                 startCourseGeneration(courseParams);
             }, 1500);
@@ -179,6 +251,13 @@ export function AICourseCreatorChat({
                     type: 'text'
                 };
                 setMessages(prev => [...prev, aiMessage]);
+
+                // Сохранить AI message в БД
+                if (sessionId) {
+                    saveMessage('ai', aiMessage.content).catch(err =>
+                        console.error('Failed to save AI message:', err)
+                    );
+                }
             } catch (error) {
                 console.error('AI chat error:', error);
             } finally {
@@ -209,6 +288,13 @@ export function AICourseCreatorChat({
             generationSteps: steps
         };
         setMessages(prev => [...prev, generatingMessage]);
+
+        // Сохранить generating message в БД с metadata
+        if (sessionId) {
+            saveMessage('ai', generatingMessage.content, { type: 'generating', generationSteps: steps }).catch(err =>
+                console.error('Failed to save generating message:', err)
+            );
+        }
 
         // Simulate progress steps
         const updateStep = (index: number, status: 'loading' | 'completed') => {
@@ -299,12 +385,12 @@ export function AICourseCreatorChat({
     const emptyState = messages.length === 0;
 
     return (
-        <div className="flex flex-col h-full w-full max-w-4xl mx-auto relative">
+        <div className="flex flex-col h-full w-full max-w-4xl mx-auto">
 
             {/* Messages Area - Added ref here */}
             <div
                 ref={scrollAreaRef}
-                className={`flex-1 overflow-y-auto p-4 md:p-8 space-y-6 ${emptyState ? 'items-center justify-center flex' : ''}`}
+                className={`flex-1 overflow-y-auto p-4 md:p-8 space-y-6 scroll-smooth ${emptyState ? 'items-center justify-center flex' : ''}`}
             >
 
                 {/* Empty State / Welcome Screen */}
@@ -498,7 +584,25 @@ export function AICourseCreatorChat({
                         disabled={isLoading || isGenerating}
                         className="flex-1 border-none bg-transparent h-14 px-5 text-base focus-visible:ring-0 placeholder:text-muted-foreground/50"
                     />
-                    <div className="pr-3">
+                    <div className="flex items-center gap-1.5 pr-2">
+                        {/* Clear Chat Button */}
+                        {messages.length > 0 && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={async () => {
+                                    const success = await clearChat();
+                                    if (success) {
+                                        setMessages([]);
+                                        console.log('Chat cleared');
+                                    }
+                                }}
+                                className="h-9 w-9 text-muted-foreground hover:text-destructive transition-colors"
+                                title="Clear chat"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        )}
                         <Button
                             size="icon"
                             onClick={() => handleSend()}

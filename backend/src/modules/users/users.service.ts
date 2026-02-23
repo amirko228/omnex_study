@@ -2,7 +2,8 @@
 // USERS SERVICE — Управление профилями пользователей
 // ============================================================================
 
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { RedisService } from '../../common/redis/redis.service';
 
@@ -108,10 +109,42 @@ export class UsersService {
     }
 
     // Удалить аккаунт (soft delete)
-    async deleteAccount(userId: string) {
+    async deleteAccount(userId: string, password?: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true, email: true, passwordHash: true }
+        });
+
+        if (!user) {
+            throw new NotFoundException('Пользователь не найден');
+        }
+
+        // Если у пользователя есть пароль, требуем его для удаления
+        if (user.passwordHash) {
+            if (!password) {
+                throw new BadRequestException('Пароль обязателен для удаления аккаунта');
+            }
+            const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+            if (!isPasswordValid) {
+                throw new UnauthorizedException('Неверный пароль');
+            }
+        }
+
         await this.prisma.user.update({
             where: { id: userId },
-            data: { deletedAt: new Date() },
+            data: {
+                deletedAt: new Date()
+            },
+        });
+
+        // Удаляем все сессии (refresh tokens) пользователя
+        await this.prisma.refreshToken.deleteMany({
+            where: { userId },
+        });
+
+        // Удаляем привязки соцсетей, чтобы их можно было привязать к новому аккаунту
+        await this.prisma.oAuthAccount.deleteMany({
+            where: { userId }
         });
 
         await this.redis.del(`user:profile:${userId}`);

@@ -15,6 +15,7 @@ export interface JwtPayload {
     sub: string;   // userId
     email: string;
     role: string;
+    jti?: string;
 }
 
 @Injectable()
@@ -45,11 +46,12 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
                 locale: true,
                 subscriptionPlan: true,
                 emailVerified: true,
+                deletedAt: true,
             },
         });
 
-        if (!user) {
-            throw new UnauthorizedException('Пользователь не найден');
+        if (!user || user.deletedAt) {
+            throw new UnauthorizedException('Пользователь не найден или аккаунт удалён');
         }
 
         return user;

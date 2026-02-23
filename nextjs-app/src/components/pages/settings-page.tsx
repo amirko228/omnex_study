@@ -35,9 +35,10 @@ type SettingsPageProps = {
   user: any;
   onDeleteAccount?: () => void;
   onLocaleChange?: (newLocale: Locale) => void;
+  refetchUser?: () => void;
 };
 
-export function SettingsPage({ dict, locale, user, onDeleteAccount, onLocaleChange }: SettingsPageProps) {
+export function SettingsPage({ dict, locale, user, onDeleteAccount, onLocaleChange, refetchUser }: SettingsPageProps) {
   const { theme, setTheme } = useTheme();
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(false);
@@ -45,9 +46,20 @@ export function SettingsPage({ dict, locale, user, onDeleteAccount, onLocaleChan
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
 
+  console.log('[SettingsPage] Current User State:', {
+    id: user?.id,
+    hasPassword: user?.hasPassword,
+    provider: user?.provider // if exists
+  });
+
   const handleChangePassword = async () => {
-    if (!currentPassword || !newPassword) {
-      toast.error('Заполните оба поля пароля');
+    console.log('[SettingsPage] handleChangePassword started', { hasPassword: user?.hasPassword });
+    if (user?.hasPassword && !currentPassword) {
+      toast.error('Введите текущий пароль');
+      return;
+    }
+    if (!newPassword) {
+      toast.error('Введите новый пароль');
       return;
     }
     if (newPassword.length < 8) {
@@ -63,6 +75,7 @@ export function SettingsPage({ dict, locale, user, onDeleteAccount, onLocaleChan
         toast.success(dict.toasts.password_changed);
         setCurrentPassword('');
         setNewPassword('');
+        if (refetchUser) refetchUser();
       } else {
         toast.error(result.error?.message || 'Ошибка смены пароля');
       }
@@ -73,16 +86,33 @@ export function SettingsPage({ dict, locale, user, onDeleteAccount, onLocaleChan
     }
   };
 
+  const [deletePassword, setDeletePassword] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const handleDeleteAccount = async () => {
-    try {
-      await apiClient.delete('/users/me');
-    } catch (err) {
-      // продолжаем удаление
+    console.log('[SettingsPage] handleDeleteAccount started', { hasPassword: user?.hasPassword, deletePasswordExist: !!deletePassword });
+    if (user?.hasPassword && !deletePassword) {
+      toast.error('Введите пароль для подтверждения удаления');
+      return;
     }
-    toast.error(dict.toasts.account_deleted);
-    apiClient.removeToken();
-    if (onDeleteAccount) {
-      setTimeout(onDeleteAccount, 2000);
+
+    setIsDeleting(true);
+    try {
+      const result = await apiClient.delete('/users/me', { password: deletePassword });
+
+      if (result.success) {
+        toast.success(dict.toasts.account_deleted || 'Аккаунт успешно удален');
+        apiClient.removeToken();
+        if (onDeleteAccount) {
+          setTimeout(onDeleteAccount, 2000);
+        }
+      } else {
+        toast.error(result.error?.message || 'Ошибка удаления аккаунта. Проверьте пароль.');
+      }
+    } catch (err) {
+      toast.error('Ошибка при удалении аккаунта');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -125,7 +155,7 @@ export function SettingsPage({ dict, locale, user, onDeleteAccount, onLocaleChan
                 </div>
                 <Select value={theme} onValueChange={(value: any) => {
                   setTheme(value);
-                  const themeNames = {
+                  const themeNames: Record<string, string> = {
                     light: dict.settings.theme_light,
                     dark: dict.settings.theme_dark,
                     system: dict.settings.theme_system
@@ -294,15 +324,19 @@ export function SettingsPage({ dict, locale, user, onDeleteAccount, onLocaleChan
             <CardContent className="space-y-6">
               {/* Change Password */}
               <div>
-                <Label className="mb-2 block">{dict.settings.change_password}</Label>
+                <Label className="mb-2 block">
+                  {user?.hasPassword ? dict.settings.change_password : (dict.settings?.set_password || 'Установить пароль')}
+                </Label>
                 <div className="space-y-3">
-                  <Input
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder={'Текущий пароль'}
-                    className="flex-1"
-                  />
+                  {user?.hasPassword && (
+                    <Input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder={'Текущий пароль'}
+                      className="flex-1"
+                    />
+                  )}
                   <div className="flex gap-3">
                     <Input
                       type="password"
@@ -318,12 +352,14 @@ export function SettingsPage({ dict, locale, user, onDeleteAccount, onLocaleChan
                       className="gap-2"
                     >
                       <Key className="h-4 w-4" />
-                      {isChangingPassword ? (dict.settings?.changing || 'Изменение...') : (dict.settings?.change || 'Изменить')}
+                      {isChangingPassword ? (dict.settings?.changing || 'Изменение...') : (user?.hasPassword ? (dict.settings?.change || 'Изменить') : (dict.settings?.set || 'Установить'))}
                     </Button>
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground mt-2">
-                  {dict.settings?.password_hint || 'Используйте надежный пароль из минимум 8 символов'}
+                  {user?.hasPassword
+                    ? (dict.settings?.password_hint || 'Используйте надежный пароль из минимум 8 символов')
+                    : 'Поскольку вы вошли через соцсети, вы можете установить пароль для входа по email'}
                 </p>
               </div>
             </CardContent>
@@ -363,16 +399,41 @@ export function SettingsPage({ dict, locale, user, onDeleteAccount, onLocaleChan
                     <AlertDialogHeader>
                       <AlertDialogTitle>{dict.settings?.delete_confirm_title || 'Вы уверены?'}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        {dict.settings?.delete_confirm_desc || 'Это действие необратимо. Это навсегда удалит ваш аккаунт и все связанные с ним данные с наших серверов.'}
+                        {dict.settings?.delete_confirm_desc || 'Это действие необратимо. Это навсегда удалит ваш аккаунт и все связанные с ним данные с наших серверов. Для подтверждения введите ваш пароль.'}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
+                    {user?.hasPassword ? (
+                      <div className="py-4">
+                        <Label htmlFor="delete-password">Ваш пароль</Label>
+                        <Input
+                          id="delete-password"
+                          type="password"
+                          value={deletePassword}
+                          onChange={(e) => setDeletePassword(e.target.value)}
+                          placeholder="Введите пароль"
+                          className="mt-2"
+                        />
+                      </div>
+                    ) : (
+                      <div className="py-4">
+                        <p className="text-sm font-medium text-destructive">
+                          Вы еще не установили пароль. Для удаления аккаунта просто нажмите кнопку подтверждения.
+                        </p>
+                      </div>
+                    )}
                     <AlertDialogFooter>
-                      <AlertDialogCancel>{dict.settings?.cancel || 'Отмена'}</AlertDialogCancel>
+                      <AlertDialogCancel onClick={() => setDeletePassword('')}>
+                        {dict.settings?.cancel || 'Отмена'}
+                      </AlertDialogCancel>
                       <AlertDialogAction
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        onClick={handleDeleteAccount}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleDeleteAccount();
+                        }}
+                        disabled={isDeleting || (user?.hasPassword && !deletePassword)}
                       >
-                        {dict.settings?.delete_account_confirm || 'Удалить аккаунт'}
+                        {isDeleting ? 'Удаление...' : (dict.settings?.delete_account_confirm || 'Удалить аккаунт')}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>

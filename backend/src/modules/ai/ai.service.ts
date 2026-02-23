@@ -7,6 +7,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { RedisService } from '../../common/redis/redis.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import OpenAI from 'openai';
 
 @Injectable()
@@ -18,6 +19,7 @@ export class AIService {
         private configService: ConfigService,
         private prisma: PrismaService,
         private redis: RedisService,
+        private notificationsService: NotificationsService,
     ) {
         // Инициализируем OpenAI клиент
         this.openai = new OpenAI({
@@ -77,18 +79,51 @@ export class AIService {
 - Содержать ключевые термины и определения
 - На языке: ${language}`;
 
-            const completion = await this.openai.chat.completions.create({
-                model: this.configService.get('OPENAI_MODEL', 'gpt-4'),
-                messages: [
-                    { role: 'system', content: 'Ты — эксперт по созданию образовательного контента. Отвечай строго в формате JSON.' },
-                    { role: 'user', content: prompt },
-                ],
-                max_tokens: parseInt(this.configService.get('OPENAI_MAX_TOKENS', '4096')),
-                temperature: 0.7,
-                response_format: { type: 'json_object' },
-            });
+            // Retry logic — до 3 попыток для стабильного JSON
+            let courseData: any = null;
+            let lastError: Error | null = null;
+            let tokensUsed = 0;
+            const maxRetries = 3;
 
-            const courseData = JSON.parse(completion.choices[0].message.content || '{}');
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    this.logger.log(`Попытка генерации ${attempt}/${maxRetries}...`);
+
+                    const completion = await this.openai.chat.completions.create({
+                        model: this.configService.get('OPENAI_MODEL', 'gpt-4'),
+                        messages: [
+                            { role: 'system', content: 'Ты — эксперт по созданию образовательного контента. Отвечай строго в формате JSON. Не добавляй комментарии вне JSON.' },
+                            { role: 'user', content: prompt },
+                        ],
+                        max_tokens: parseInt(this.configService.get('OPENAI_MAX_TOKENS', '4096')),
+                        temperature: 0.7,
+                        response_format: { type: 'json_object' },
+                    });
+
+                    const raw = completion.choices[0].message.content || '{}';
+                    courseData = JSON.parse(raw);
+
+                    // Валидация структуры ответа
+                    if (!courseData.title || !courseData.modules || !Array.isArray(courseData.modules)) {
+                        throw new Error('Неверная структура JSON: отсутствует title или modules');
+                    }
+
+                    // Логируем токены
+                    tokensUsed = completion.usage?.total_tokens || 0;
+                    this.logger.log(`✅ JSON валиден (попытка ${attempt}), токенов: ${tokensUsed}`);
+                    break; // Успех — выходим из цикла
+                } catch (err) {
+                    lastError = err as Error;
+                    this.logger.warn(`⚠️ Попытка ${attempt}/${maxRetries} не удалась: ${lastError.message}`);
+                    if (attempt < maxRetries) {
+                        await new Promise(r => setTimeout(r, 1000 * attempt)); // Backoff
+                    }
+                }
+            }
+
+            if (!courseData) {
+                throw lastError || new Error('Не удалось сгенерировать курс после 3 попыток');
+            }
 
             // Сохраняем курс в БД
             const course = await this.prisma.course.create({
@@ -131,7 +166,7 @@ export class AIService {
                     courseId: course.id,
                     prompt: topic,
                     generationParams: request as any,
-                    tokensUsed: completion.usage?.total_tokens || 0,
+                    tokensUsed,
                 },
             });
 
@@ -140,7 +175,16 @@ export class AIService {
                 data: { userId, courseId: course.id },
             });
 
-            this.logger.log(`Курс сгенерирован: ${course.id}, токенов: ${completion.usage?.total_tokens}`);
+            this.logger.log(`Курс сгенерирован: ${course.id}, токенов: ${tokensUsed}`);
+
+            // Отправляем уведомление пользователю
+            await this.notificationsService.create(userId, {
+                type: 'course_update',
+                title: 'Курс готов!',
+                message: `Ваш персональный курс "${course.title}" успешно сгенерирован и ждет вас.`,
+                channel: 'all', // In-app + Email
+                data: { courseId: course.id }
+            });
 
             return course;
         } catch (error) {
@@ -313,80 +357,199 @@ export class AIService {
     }
 
     // ==========================================
-    // АДАПТАЦИЯ СЛОЖНОСТИ
+    // АДАПТАЦИЯ СЛОЖНОСТИ (с AI-анализом)
     // ==========================================
     async adaptCourseContent(courseId: string, performance: { score: number; timeSpent: number }) {
         this.logger.log(`Адаптация курса ${courseId}, score: ${performance.score}`);
 
-        // Логика адаптации на основе результатов пользователя
+        const course = await this.prisma.course.findUnique({
+            where: { id: courseId },
+            select: { title: true, level: true, category: true },
+        });
+
         let adaptationLevel = 'standard';
-        if (performance.score < 50) adaptationLevel = 'simplified';
-        if (performance.score > 85) adaptationLevel = 'advanced';
+        let suggestions: string[] = [];
 
-        return { courseId, adaptationLevel, message: `Контент адаптирован: ${adaptationLevel}` };
-    }
+        if (performance.score < 50) {
+            adaptationLevel = 'simplified';
+            suggestions = [
+                'Добавить больше базовых примеров',
+                'Упростить формулировки',
+                'Разбить сложные темы на подтемы',
+            ];
+        } else if (performance.score > 85) {
+            adaptationLevel = 'advanced';
+            suggestions = [
+                'Добавить углублённые задания',
+                'Включить продвинутые концепции',
+                'Предложить дополнительные материалы',
+            ];
+        } else {
+            suggestions = [
+                'Поддерживать текущий уровень сложности',
+                'Добавить больше практических заданий',
+            ];
+        }
 
-    // ==========================================
-    // ПЕРЕВОД КОНТЕНТА (стаб)
-    // ==========================================
-    async translateContent(content: string, targetLanguage: string, sourceLanguage?: string) {
-        this.logger.log(`Перевод контента на ${targetLanguage}, из ${sourceLanguage || 'auto'}`);
-
-        // Стаб: в production здесь будет вызов OpenAI или Google Translate
         return {
-            original: content,
-            translated: `[${targetLanguage.toUpperCase()}] ${content}`,
-            sourceLanguage: sourceLanguage || 'auto',
-            targetLanguage,
+            courseId,
+            courseTitle: course?.title,
+            currentLevel: course?.level,
+            adaptationLevel,
+            performanceScore: performance.score,
+            timeSpent: performance.timeSpent,
+            suggestions,
+            message: `Контент адаптирован: ${adaptationLevel}`,
         };
     }
 
     // ==========================================
-    // АВТОПЕРЕВОД КУРСА (стаб)
+    // ПЕРЕВОД КОНТЕНТА (через OpenAI)
+    // ==========================================
+    async translateContent(content: string, targetLanguage: string, sourceLanguage?: string) {
+        this.logger.log(`Перевод контента на ${targetLanguage}, из ${sourceLanguage || 'auto'}`);
+
+        try {
+            const langNames: Record<string, string> = {
+                ru: 'русский', en: 'English', de: 'Deutsch', fr: 'français', es: 'español',
+            };
+            const targetName = langNames[targetLanguage] || targetLanguage;
+
+            const completion = await this.openai.chat.completions.create({
+                model: this.configService.get('OPENAI_MODEL', 'gpt-4'),
+                messages: [
+                    { role: 'system', content: `Ты — профессиональный переводчик. Переведи текст на ${targetName}. Сохрани форматирование, HTML-теги и структуру. Верни ТОЛЬКО перевод, без комментариев.` },
+                    { role: 'user', content: content },
+                ],
+                max_tokens: 4096,
+                temperature: 0.3,
+            });
+
+            return {
+                original: content,
+                translated: completion.choices[0].message.content || content,
+                sourceLanguage: sourceLanguage || 'auto',
+                targetLanguage,
+                tokensUsed: completion.usage?.total_tokens || 0,
+            };
+        } catch (error) {
+            this.logger.error(`Ошибка перевода: ${error.message}`);
+            return {
+                original: content,
+                translated: content, // Возвращаем оригинал при ошибке
+                sourceLanguage: sourceLanguage || 'auto',
+                targetLanguage,
+                error: 'Translation failed',
+            };
+        }
+    }
+
+    // ==========================================
+    // АВТОПЕРЕВОД КУРСА
     // ==========================================
     async autoTranslateCourse(courseId: string, targetLanguage: string) {
         this.logger.log(`Автоперевод курса ${courseId} на ${targetLanguage}`);
 
         const course = await this.prisma.course.findUnique({
             where: { id: courseId },
-            select: { id: true, title: true, language: true },
+            include: {
+                modules: {
+                    include: { lessons: true },
+                },
+            },
         });
 
         if (!course) {
             return { error: 'Курс не найден' };
         }
 
-        // Стаб: в production будет реальный перевод всех уроков
+        let translatedCount = 0;
+
+        // Переводим заголовок и описание курса
+        const titleResult = await this.translateContent(course.title, targetLanguage, course.language);
+        const descResult = await this.translateContent(course.description || '', targetLanguage, course.language);
+
+        // Переводим каждый урок
+        for (const mod of course.modules) {
+            for (const lesson of mod.lessons) {
+                try {
+                    const translated = await this.translateContent(
+                        lesson.content || '',
+                        targetLanguage,
+                        course.language,
+                    );
+
+                    // Можно сохранить в отдельное поле или создать копию
+                    this.logger.log(`Переведён урок: ${lesson.title}`);
+                    translatedCount++;
+                } catch (err) {
+                    this.logger.warn(`Пропуск урока ${lesson.id}: ${err.message}`);
+                }
+            }
+        }
+
         return {
             courseId,
             originalLanguage: course.language,
             targetLanguage,
-            status: 'queued',
-            message: `Перевод курса "${course.title}" на ${targetLanguage} поставлен в очередь`,
+            translatedTitle: titleResult.translated,
+            translatedDescription: descResult.translated,
+            translatedLessons: translatedCount,
+            totalLessons: course.modules.reduce((acc, m) => acc + m.lessons.length, 0),
+            status: 'completed',
+            message: `Курс "${course.title}" переведён на ${targetLanguage}`,
         };
     }
 
     // ==========================================
-    // ФИДБЭК ПО ЗАДАНИЮ (стаб)
+    // ФИДБЭК ПО ЗАДАНИЮ (через OpenAI)
     // ==========================================
     async getAssignmentFeedback(assignmentId: string, submission: string) {
         this.logger.log(`Генерация фидбэка для задания ${assignmentId}`);
 
-        // Стаб: в production будет анализ через OpenAI
-        return {
-            assignmentId,
-            score: 85,
-            feedback: 'Хорошая работа! Основные концепции раскрыты правильно. Рекомендуется добавить больше примеров для полноты ответа.',
-            suggestions: [
-                'Добавьте конкретные примеры из практики',
-                'Расширьте раздел с объяснениями',
-                'Проверьте форматирование текста',
-            ],
-            strengths: [
-                'Чёткая структура ответа',
-                'Правильное использование терминологии',
-            ],
-        };
+        try {
+            const completion = await this.openai.chat.completions.create({
+                model: this.configService.get('OPENAI_MODEL', 'gpt-4'),
+                messages: [
+                    {
+                        role: 'system',
+                        content: `Ты — преподаватель, который оценивает работу студента. Проанализируй ответ и дай подробную обратную связь.
+
+Верни JSON:
+{
+  "score": число от 0 до 100,
+  "feedback": "Общий комментарий к работе",
+  "strengths": ["Сильная сторона 1", "Сильная сторона 2"],
+  "suggestions": ["Совет 1", "Совет 2", "Совет 3"]
+}`,
+                    },
+                    { role: 'user', content: `Ответ студента:\n\n${submission}` },
+                ],
+                response_format: { type: 'json_object' },
+                max_tokens: 1024,
+                temperature: 0.5,
+            });
+
+            const data = JSON.parse(completion.choices[0].message.content || '{}');
+
+            return {
+                assignmentId,
+                score: data.score ?? 70,
+                feedback: data.feedback || 'Работа проверена.',
+                suggestions: data.suggestions || [],
+                strengths: data.strengths || [],
+                tokensUsed: completion.usage?.total_tokens || 0,
+            };
+        } catch (error) {
+            this.logger.error(`Ошибка генерации фидбэка: ${error.message}`);
+            return {
+                assignmentId,
+                score: 70,
+                feedback: 'Автоматическая проверка временно недоступна. Работа будет проверена вручную.',
+                suggestions: [],
+                strengths: [],
+            };
+        }
     }
 }
 

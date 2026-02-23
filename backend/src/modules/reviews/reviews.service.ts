@@ -14,51 +14,86 @@ export class ReviewsService {
     ) { }
 
     // Отзывы на курс
-    async getCourseReviews(courseId: string, page = 1, limit = 10) {
+    async getCourseReviews(courseId: string, currentUserId?: string, page = 1, limit = 10) {
+        console.log(`[ReviewsService] getCourseReviews: courseId=${courseId}, currentUserId=${currentUserId}, page=${page}, limit=${limit}`);
+
         const skip = (page - 1) * limit;
 
-        const [reviews, total] = await Promise.all([
-            this.prisma.review.findMany({
-                where: { courseId },
-                skip,
-                take: limit,
-                orderBy: { createdAt: 'desc' },
-                include: {
-                    user: { select: { id: true, name: true, avatar: true } },
-                },
-            }),
-            this.prisma.review.count({ where: { courseId } }),
-        ]);
+        try {
+            console.log(`[ReviewsService] Executing findMany for courseId: ${courseId}`);
 
-        return { data: reviews, total, page, limit, totalPages: Math.ceil(total / limit) };
+            const [reviews, total] = await Promise.all([
+                this.prisma.review.findMany({
+                    where: { courseId: courseId },
+                    skip,
+                    take: limit,
+                    orderBy: { createdAt: 'desc' },
+                    include: {
+                        user: { select: { id: true, name: true, avatar: true } },
+                        // Убираем проблемный include пока не обновим клиент
+                        // likes: { select: { userId: true } }
+                    },
+                }),
+                this.prisma.review.count({ where: { courseId: courseId } }),
+            ]);
+
+            console.log(`[ReviewsService] DB results: total=${total}, returned=${reviews.length}`);
+
+            // Маппим данные
+            const mappedReviews = (reviews as any[]).map(review => {
+                return {
+                    ...review
+                };
+            });
+
+            return { data: mappedReviews, total, page, limit, totalPages: Math.ceil(total / limit) };
+        } catch (error) {
+            console.error('[ReviewsService] getCourseReviews error:', error);
+            throw error;
+        }
     }
 
     // Оставить отзыв
     async createReview(userId: string, courseId: string, rating: number, comment?: string) {
-        // Проверяем, записан ли пользователь на курс
-        const enrollment = await this.prisma.enrollment.findUnique({
+        // Для MVP: автоматически записываем пользователя на курс, если он еще не записан
+        // Это позволяет оставлять отзывы без предварительной ручной записи.
+        await this.prisma.enrollment.upsert({
             where: { userId_courseId: { userId, courseId } },
+            create: { userId, courseId },
+            update: {}
         });
-
-        if (!enrollment) {
-            throw new NotFoundException('Вы не записаны на этот курс');
-        }
 
         // Проверяем дубликат
-        const existing = await this.prisma.review.findUnique({
-            where: { userId_courseId: { userId, courseId } },
+        console.log(`[ReviewsService] Checking for existing review: userId=${userId}, courseId=${courseId}`);
+        const existing = await this.prisma.review.findFirst({
+            where: {
+                userId: userId,
+                courseId: courseId
+            },
         });
 
-        if (existing) throw new ConflictException('Вы уже оставили отзыв');
+        if (existing) {
+            console.warn('[ReviewsService] Duplicate review attempt block:', existing.id);
+            throw new ConflictException('Вы уже оставили отзыв');
+        }
 
+        console.log('[ReviewsService] Creating new review in DB...');
         const review = await this.prisma.review.create({
-            data: { userId, courseId, rating, comment },
+            data: {
+                userId: userId,
+                courseId: courseId,
+                rating: rating,
+                comment: comment
+            },
             include: { user: { select: { id: true, name: true, avatar: true } } },
         });
+
+        console.log('[ReviewsService] Review created:', review);
 
         // Пересчитываем средний рейтинг курса
         await this.recalculateRating(courseId);
 
+        console.log('[ReviewsService] Returning created review');
         return review;
     }
 
@@ -110,49 +145,9 @@ export class ReviewsService {
         await this.redis.del(`course:${courseId}`);
     }
 
-    // ==========================================
-    // Отметить отзыв как полезный
-    // ==========================================
-    async markHelpful(reviewId: string, userId: string) {
-        const review = await this.prisma.review.findUnique({ where: { id: reviewId } });
-        if (!review) throw new NotFoundException('Отзыв не найден');
-
-        // Проверяем, не отмечал ли уже
-        const alreadyMarked = await this.redis.get(`review:helpful:${reviewId}:${userId}`);
-        if (alreadyMarked) {
-            return { message: 'Вы уже отметили этот отзыв как полезный', helpfulCount: parseInt(alreadyMarked) || 0 };
-        }
-
-        // Инкрементируем счётчик полезности в Redis
-        const key = `review:helpful:count:${reviewId}`;
-        const currentStr = await this.redis.get(key);
-        const current = parseInt(currentStr || '0');
-        const newCount = current + 1;
-        await this.redis.set(key, String(newCount), 86400 * 365);
-        await this.redis.set(`review:helpful:${reviewId}:${userId}`, String(newCount), 86400 * 365);
-
-        return { message: 'Отзыв отмечен как полезный', helpfulCount: newCount };
-    }
-
-    // ==========================================
-    // Пожаловаться на отзыв
-    // ==========================================
     async reportReview(reviewId: string, userId: string, reason?: string) {
-        const review = await this.prisma.review.findUnique({ where: { id: reviewId } });
-        if (!review) throw new NotFoundException('Отзыв не найден');
-
-        // Логируем жалобу в audit
-        await this.prisma.auditLog.create({
-            data: {
-                userId,
-                action: 'review_report',
-                entityType: 'review',
-                entityId: reviewId,
-                changes: { reason: reason || 'Жалоба на отзыв' } as any,
-            },
-        });
-
-        return { message: 'Жалоба на отзыв отправлена' };
+        // Метод удален по запросу
+        return { message: 'Функционал жалоб отключен' };
     }
 }
 

@@ -6,16 +6,16 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function ProgressPage() {
-    const { dict, isAuthenticated, locale, setSelectedCourse } = useAppContext();
+    const { dict, isAuthenticated, isLoading, locale, setSelectedCourse } = useAppContext();
     const router = useRouter();
 
     useEffect(() => {
-        if (!isAuthenticated) {
+        if (!isLoading && !isAuthenticated) {
             router.push('/login');
         }
-    }, [isAuthenticated, router]);
+    }, [isAuthenticated, isLoading, router]);
 
-    if (!dict || !isAuthenticated) {
+    if (!dict || isLoading || !isAuthenticated) {
         return (
             <div className="flex h-screen items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />

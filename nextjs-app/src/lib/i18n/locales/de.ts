@@ -523,7 +523,10 @@ export const de = {
     all_posts: "Alle Beiträge",
     subtitle: "Lernen, Wachsen, Erreichen",
     description: "Einblicke, Anleitungen und Erfolgsgeschichten aus der Welt des KI-gestützten Lernens",
-    featured: "Empfohlene Beiträge",
+    featured: "Beliebte Beiträge",
+    my_favorites: "Meine Favoriten",
+    favorites_empty: "Sie haben noch keine Favoritenbeiträge. Liken oder speichern Sie Beiträge!",
+    favorites_login_required: "Melden Sie sich an, um Ihre Favoriten zu sehen",
     search_placeholder: "Artikel suchen...",
     cta_title: "Starten Sie Ihre IT-Reise heute",
     cta_description: "Schließen Sie sich Tausenden von Studenten an, die bereits Programmierung und KI auf unserer Plattform lernen.",
@@ -532,7 +535,53 @@ export const de = {
     post_count_many: "Artikel",
     no_results: "Keine Ergebnisse gefunden",
     no_results_description: "Versuchen Sie, Ihre Suchanfrage zu ändern oder eine andere Kategorie auszuwählen.",
-    read_time: "Min. Lesezeit"
+    read_time: "Min. Lesezeit",
+    categories: {
+      all: "Alle",
+      AI: "KI",
+      Programming: "Programmierung",
+      Career: "Karriere",
+      Design: "Design",
+      Business: "Business",
+      Learning: "Lernen"
+    },
+    author: "Autor",
+    back_to_blog: "Zurück zum Blog",
+    back: "Zurück",
+    article_not_found: "Artikel nicht gefunden",
+    article_not_found_desc: "Der angeforderte Artikel existiert nicht",
+    related_posts: "Ähnliche Artikel",
+    popular_posts: "Beliebt",
+    views: "Aufrufe",
+    login_to_like: "Bitte anmelden, um zu liken",
+    login_to_bookmark: "Bitte anmelden, um zu speichern",
+    share: "Teilen:",
+    save: "Speichern",
+    like_added: "Danke für dein Like! ❤️",
+    like_removed: "Like entfernt",
+    bookmark_added: "Zu Lesezeichen hinzugefügt 📚",
+    bookmark_removed: "Aus Lesezeichen entfernt",
+    link_copied: "Link kopiert",
+    failed_like: "Fehler beim Liken",
+    failed_bookmark: "Fehler beim Speichern",
+    comments: {
+      title: "Kommentare",
+      add_comment: "Kommentar schreiben",
+      comment_placeholder: "Teile deine Gedanken...",
+      submit: "Senden",
+      reply: "Antworten",
+      delete: "Löschen",
+      replying_to: "Antwort an",
+      cancel: "Abbrechen",
+      no_comments: "Noch keine Kommentare",
+      be_first: "Sei der Erste, der kommentiert!",
+      login_required: "Bitte anmelden, um zu kommentieren",
+      delete_confirm: "Kommentar löschen?",
+      deleted: "Kommentar gelöscht",
+      failed_delete: "Fehler beim Löschen",
+      added: "Kommentar hinzugefügt! ✓",
+      failed_add: "Fehler beim Hinzufügen"
+    }
   },
   footer: {
     tagline: "KI-Lernplattform für jeden",
@@ -557,11 +606,81 @@ export const de = {
     chat_support: "Chat-Support",
     chat_support_desc: "Online-Hilfe 24/7",
     email_support: "E-Mail-Support",
+    email_support_desc: "Antwort innerhalb von 24 Stunden",
     faq_title: "Häufig gestellte Fragen",
     no_answer_title: "Keine Antwort gefunden?",
     no_answer_desc: "Unser Support-Team ist immer bereit zu helfen",
     contact_support: "Support kontaktieren",
     start_chat: "Chat starten",
+    browse_all: "Alle ansehen",
+    articles: "Artikel",
+    back: "Zurück",
+    helpful: "War das hilfreich?",
+    yes: "Ja",
+    no: "Nein",
+    thanks_feedback: "Danke für Ihr Feedback!",
+    related_articles: "Verwandte Artikel",
+    kb_categories: [
+      {
+        id: "getting-started",
+        title: "Erste Schritte",
+        description: "Wie Sie das Lernen auf der Plattform beginnen",
+        icon: "rocket",
+        articles: [
+          { id: "gs-1", title: "Registrierung und erste Anmeldung", content: "Um die Plattform zu nutzen, gehen Sie zur Registrierungsseite. Füllen Sie das Formular aus: Name, E-Mail und Passwort. Nach der Registrierung wird eine Bestätigungs-E-Mail gesendet. Nach der Bestätigung können Sie sich anmelden und mit dem Lernen beginnen." },
+          { id: "gs-2", title: "Ihren ersten Kurs wählen", content: "Nach der Anmeldung gehen Sie zum Kurskatalog. Sie können Kurse nach Kategorien filtern: Programmierung, Design, Marketing, Datenwissenschaft. KI-gestützte personalisierte Kursgenerierung ist ebenfalls verfügbar." },
+          { id: "gs-3", title: "Profil einrichten", content: "Gehen Sie zu Ihren Profileinstellungen, um Avatar, Name und andere Details anzupassen. Sie können auch Ihre bevorzugte Sprache und das Theme (hell oder dunkel) wählen." }
+        ]
+      },
+      {
+        id: "ai-features",
+        title: "KI-Funktionen",
+        description: "Wie Sie den KI-Tutor und die Kursgenerierung nutzen",
+        icon: "sparkles",
+        articles: [
+          { id: "ai-1", title: "KI-Tutor: Fragen stellen", content: "Der KI-Tutor ist in jeder Lektion verfügbar. Klicken Sie auf das Chat-Symbol, um einen Dialog zu öffnen. Stellen Sie Fragen in natürlicher Sprache — die KI versteht den Lektionskontext und gibt eine detaillierte Antwort." },
+          { id: "ai-2", title: "KI-Kursgenerierung", content: "Gehen Sie zum Abschnitt 'Kurs erstellen'. Geben Sie Thema, Schwierigkeitsgrad und Anzahl der Lektionen an. Die KI erstellt automatisch eine Kursstruktur mit Lernmaterialien und Aufgaben." },
+          { id: "ai-3", title: "Adaptives Lernen", content: "Die Plattform analysiert Ihren Fortschritt und passt die Schwierigkeit der Materialien automatisch an." }
+        ]
+      },
+      {
+        id: "account",
+        title: "Konto & Abonnement",
+        description: "Kontoverwaltung, Zahlung und Abonnement",
+        icon: "user",
+        articles: [
+          { id: "acc-1", title: "Abonnement verwalten", content: "Gehen Sie zu Einstellungen → Abonnement. Der kostenlose Plan bietet Zugang zu einer begrenzten Anzahl von Kursen. Premium bietet vollen Zugang zu allen Materialien." },
+          { id: "acc-2", title: "Passwort ändern", content: "Gehen Sie zu Einstellungen → Sicherheit. Geben Sie Ihr aktuelles Passwort und das neue Passwort zweimal ein." },
+          { id: "acc-3", title: "Konto löschen", content: "Gehen Sie zu Einstellungen → Konto → Konto löschen. Alle Ihre Daten werden dauerhaft gelöscht." }
+        ]
+      },
+      {
+        id: "courses",
+        title: "Kurse & Lernen",
+        description: "Lernformate, Zertifikate und Fortschritt",
+        icon: "book",
+        articles: [
+          { id: "course-1", title: "Lernformate", content: "Die Plattform unterstützt 4 Formate: Textlektionen, interaktive Quiz, KI-Dialog und praktische Aufgaben." },
+          { id: "course-2", title: "Zertifikat erhalten", content: "Schließen Sie alle Kurslektionen ab und bestehen Sie den Abschlusstest. Das Zertifikat wird automatisch im PDF-Format generiert." },
+          { id: "course-3", title: "Fortschritt verfolgen", content: "Auf der Seite 'Mein Fortschritt' sehen Sie Lernstatistiken: abgeschlossene Lektionen, Zeit, Bewertungen und Erfolge." }
+        ]
+      }
+    ],
+    chat_placeholder: "Geben Sie Ihre Nachricht ein...",
+    chat_greeting: "Hallo! Wie können wir Ihnen helfen?",
+    chat_auto_reply: "Danke für Ihre Nachricht! Ein Operator wird in Kürze antworten.",
+    chat_send: "Senden",
+    chat_online: "Online",
+    chat_support_hours: "Mo-Fr: 9:00 - 21:00 (MEZ)",
+    email_form_title: "Schreiben Sie uns",
+    email_form_desc: "Füllen Sie das Formular aus und wir antworten innerhalb von 24 Stunden",
+    email_name: "Ihr Name",
+    email_address: "E-Mail-Adresse",
+    email_subject: "Betreff",
+    email_message: "Nachricht",
+    email_send: "Nachricht senden",
+    email_sent_success: "Nachricht gesendet! Wir antworten innerhalb von 24 Stunden.",
+    email_subjects: ["Technisches Problem", "Abonnementfrage", "Kursfrage", "Vorschlag", "Andere"],
     faqs: [
       {
         question: "Wie starte ich mit der Plattform?",
@@ -837,5 +956,37 @@ export const de = {
       processing: "KI-Verarbeitung"
     },
     disclaimer: "KI-generierte Inhalte können ungenau sein."
+  },
+  reviews: {
+    title: "Bewertungen",
+    add_review: "Bewertung hinzufügen",
+    your_review: "Ihre Bewertung",
+    rate_course: "Bewerten Sie diesen Kurs von 1 bis 5 Sternen",
+    comment_optional: "Kommentar (optional)",
+    comment_placeholder: "Teilen Sie Ihre Erfahrung mit diesem Kurs...",
+    publish_review: "Bewertung veröffentlichen",
+    update_review: "Bewertung aktualisieren",
+    submitting: "Wird gesendet...",
+    cancel: "Abbrechen",
+    delete: "Löschen",
+    helpful: "Hilfreich",
+    report: "Melden",
+    no_reviews: "Noch keine Bewertungen für diesen Kurs",
+    be_first: "Seien Sie der Erste, der eine Bewertung hinterlässt!",
+    loading: "Bewertungen werden geladen...",
+    you_badge: "Sie",
+    error_select_rating: "Bitte wählen Sie eine Bewertung",
+    error_submit: "Fehler beim Senden der Bewertung",
+    confirm_delete: "Sind Sie sicher, dass Sie diese Bewertung löschen möchten?",
+    report_reason_prompt: "Geben Sie den Grund für die Meldung an (optional):",
+    report_sent: "Meldung gesendet",
+    error_report: "Fehler beim Senden der Meldung",
+    reviews_count_one: "Bewertung",
+    reviews_count_few: "Bewertungen",
+    reviews_count_many: "Bewertungen",
+    prev_page: "Zurück",
+    next_page: "Weiter",
+    page_of: "Seite {page} von {total}",
+    out_of_five: "von 5"
   }
 } as const;

@@ -54,9 +54,6 @@ export function EnhancedLanding({ dict, onNavigate, isAuthenticated = false }: E
         {/* How It Works Section */}
         <HowItWorksSection dict={dict} />
 
-        {/* Testimonials Section */}
-        <TestimonialsSection dict={dict} />
-
         {/* CTA Section */}
         <CTASection dict={dict} handleCTAClick={handleCTAClick} />
       </div>

@@ -9,15 +9,15 @@ import { motion } from 'motion/react';
 import { ChevronLeft } from 'lucide-react';
 
 export default function GenerateCoursePage() {
-    const { dict, locale, subscription, isAuthenticated } = useAppContext();
+    const { dict, locale, subscription, isAuthenticated, isLoading } = useAppContext();
     const router = useRouter();
 
     // Hooks must be called before any conditional returns
     useEffect(() => {
-        if (!isAuthenticated) {
+        if (!isLoading && !isAuthenticated) {
             router.push('/login');
         }
-    }, [isAuthenticated, router]);
+    }, [isAuthenticated, isLoading, router]);
 
     if (!dict) {
         return (
@@ -27,8 +27,12 @@ export default function GenerateCoursePage() {
         );
     }
 
-    if (!isAuthenticated) {
-        return null;
+    if (isLoading || !isAuthenticated) {
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            </div>
+        );
     }
 
     return (

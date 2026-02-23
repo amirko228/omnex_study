@@ -19,15 +19,22 @@ class ApiClient {
    */
   private getToken(): string | null {
     if (typeof window === 'undefined') return null;
-    return localStorage.getItem(config.auth.tokenKey);
+    return localStorage.getItem(config.auth.tokenKey) || sessionStorage.getItem(config.auth.tokenKey);
   }
 
   /**
    * Set authentication token to storage
    */
-  setToken(token: string): void {
+  setToken(token: string, remember: boolean = true): void {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(config.auth.tokenKey, token);
+
+    if (remember) {
+      localStorage.setItem(config.auth.tokenKey, token);
+      sessionStorage.removeItem(config.auth.tokenKey); // Ensure it's not in session
+    } else {
+      sessionStorage.setItem(config.auth.tokenKey, token);
+      localStorage.removeItem(config.auth.tokenKey); // Ensure it's not in local
+    }
   }
 
   /**
@@ -37,6 +44,8 @@ class ApiClient {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(config.auth.tokenKey);
     localStorage.removeItem(config.auth.refreshTokenKey);
+    sessionStorage.removeItem(config.auth.tokenKey);
+    sessionStorage.removeItem(config.auth.refreshTokenKey);
   }
 
   /**
@@ -64,9 +73,9 @@ class ApiClient {
    */
   private async request<T>(
     endpoint: string,
-    options: ApiRequestOptions = {}
+    options: ApiRequestOptions & { _retry?: boolean } = {}
   ): Promise<ApiResponse<T>> {
-    const { method = 'GET', headers = {}, body, params } = options;
+    const { method = 'GET', headers = {}, body, params, _retry = false } = options;
 
     const url = this.buildUrl(endpoint, params);
     const token = this.getToken();
@@ -93,6 +102,58 @@ class ApiClient {
 
       clearTimeout(timeoutId);
 
+      // Handle 401 Unauthorized - Try to refresh token
+      if (response.status === 401 && !_retry && typeof window !== 'undefined') {
+        const refreshToken = localStorage.getItem(config.auth.refreshTokenKey) ||
+          sessionStorage.getItem(config.auth.refreshTokenKey);
+
+        if (refreshToken) {
+          console.log('[ApiClient] Token expired, attempting refresh...');
+
+          try {
+            // Call refresh endpoint directly to avoid recursion
+            const refreshRes = await fetch(`${this.baseUrl}/auth/refresh`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refreshToken }),
+            });
+
+            if (refreshRes.ok) {
+              const refreshData = await refreshRes.json();
+              const newToken = refreshData.data?.token || refreshData.token;
+              const newRefreshToken = refreshData.data?.refreshToken || refreshData.refreshToken;
+
+              if (newToken) {
+                console.log('[ApiClient] Token refreshed successfully');
+                // Save new tokens
+                const remember = !!localStorage.getItem(config.auth.tokenKey);
+                this.setToken(newToken, remember);
+                if (newRefreshToken) {
+                  const storage = remember ? localStorage : sessionStorage;
+                  storage.setItem(config.auth.refreshTokenKey, newRefreshToken);
+                }
+
+                // Retry original request with new token
+                return this.request<T>(endpoint, { ...options, _retry: true });
+              }
+            }
+          } catch (refreshErr) {
+            console.error('[ApiClient] Refresh token failed:', refreshErr);
+          }
+        }
+
+        // If refresh failed or no refresh token, logout 
+        // But DON'T logout if it's a password change or account deletion request returning 401 (likely wrong current password)
+        const isSensitiveAction = endpoint.includes('/auth/change-password') ||
+          (endpoint.includes('/users/me') && method === 'DELETE');
+
+        if (!isSensitiveAction) {
+          this.removeToken();
+          // Dispath custom event to notify UI to re-login if needed
+          window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+        }
+      }
+
       const data = await response.json();
 
       if (!response.ok) {
@@ -112,7 +173,7 @@ class ApiClient {
         message: data.message,
       };
     } catch (error: unknown) {
-      console.error('API Request Error:', error);
+      console.warn('API Request failed:', error instanceof Error ? error.message : 'Network error');
 
       const errorMessage = error instanceof Error ? error.message : 'Network error occurred';
 
@@ -157,8 +218,8 @@ class ApiClient {
   /**
    * DELETE request
    */
-  async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, { method: 'DELETE' });
+  async delete<T>(endpoint: string, body?: unknown): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, { method: 'DELETE', body });
   }
 
   /**
