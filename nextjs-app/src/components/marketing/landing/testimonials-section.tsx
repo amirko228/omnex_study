@@ -72,7 +72,7 @@ export function TestimonialsSection({ dict }: TestimonialsSectionProps) {
                                             className="text-muted-foreground leading-relaxed italic"
                                             whileHover={{ x: 5 }}
                                         >
-                                            "{testimonial.text}"
+                                            &quot;{testimonial.text}&quot;
                                         </motion.p>
                                     </AnimatedCard>
                                 </motion.div>

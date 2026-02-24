@@ -3,7 +3,7 @@
 import { ThemeProvider } from "@/lib/theme/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { ReactQueryProvider } from "@/lib/react-query-provider";
-import { useState, useEffect, createContext, useContext, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, createContext, useContext, useMemo, type ReactNode } from 'react';
 import { getDictionary, type Dictionary } from '@/lib/i18n/dictionaries';
 import { mockCourses } from '@/lib/api/mock-data';
 import type { Locale } from '@/lib/i18n/config';
@@ -11,9 +11,7 @@ import type { CourseFormat, User, LoginCredentials, RegisterDTO } from '@/types'
 import { useAuth } from '@/lib/hooks/useAuth';
 import { paymentsApi } from '@/lib/api/payments';
 
-// App Context
 type AppContextType = {
-    // Auth
     isAuthenticated: boolean;
     isLoading: boolean;
     user: User | null | undefined;
@@ -21,14 +19,11 @@ type AppContextType = {
     register: (data: RegisterDTO) => void;
     logout: () => void;
     refetchUser: () => void;
-    // Locale
     locale: Locale;
     setLocale: (locale: Locale) => void;
     dict: Dictionary | null;
-    // Courses
     purchasedCourses: string[];
     purchaseCourse: (courseId: string) => void;
-    // Subscription
     subscription: 'free' | 'pro' | 'enterprise';
     subscribe: (planId: 'free' | 'pro' | 'enterprise') => Promise<void>;
     selectedFormat: CourseFormat;
@@ -47,30 +42,46 @@ export function useAppContext() {
     return context;
 }
 
+function getStoredLocale(): Locale {
+    if (typeof window !== 'undefined') {
+        return (localStorage.getItem('omnex-locale') as Locale) || 'ru';
+    }
+    return 'ru';
+}
+
+function getStoredPurchased(): string[] {
+    if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('omnex-purchased');
+        if (saved) return JSON.parse(saved);
+    }
+    return [];
+}
+
+function getStoredSubscription(): 'free' | 'pro' | 'enterprise' {
+    if (typeof window !== 'undefined') {
+        return (localStorage.getItem('omnex-subscription') as 'free' | 'pro' | 'enterprise') || 'free';
+    }
+    return 'free';
+}
+
 function AppStateProvider({ children }: { children: ReactNode }) {
     const { isAuthenticated, user, login, register, logout, isLoading, refetch } = useAuth();
 
-    const [locale, setLocale] = useState<Locale>('ru');
+    const [locale, setLocale] = useState<Locale>(getStoredLocale);
     const [dict, setDict] = useState<Dictionary | null>(null);
-    const [purchasedCourses, setPurchasedCourses] = useState<string[]>([]);
+    const [localPurchasedCourses, setLocalPurchasedCourses] = useState<string[]>(getStoredPurchased);
     const [selectedFormat, setSelectedFormat] = useState<CourseFormat>('text');
     const [selectedCourse, setSelectedCourse] = useState(mockCourses[0]);
+    const [localSubscription, setLocalSubscription] = useState<'free' | 'pro' | 'enterprise'>(getStoredSubscription);
 
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const savedLocale = localStorage.getItem('omnex-locale') as Locale;
-            if (savedLocale) {
-                setLocale(savedLocale);
-            }
-            const savedPurchased = localStorage.getItem('omnex-purchased');
-            if (savedPurchased) {
-                setPurchasedCourses(JSON.parse(savedPurchased));
-            } else if (user?.purchasedCourses) {
-                // Если нет сохраненных, берем из профиля пользователя (mock data)
-                setPurchasedCourses(user.purchasedCourses);
-            }
-        }
-    }, [user]);
+    const purchasedCourses = useMemo(() => {
+        if (localPurchasedCourses.length > 0) return localPurchasedCourses;
+        return user?.purchasedCourses ?? [];
+    }, [localPurchasedCourses, user?.purchasedCourses]);
+
+    const subscription = useMemo(() => {
+        return user?.subscription ?? localSubscription;
+    }, [user?.subscription, localSubscription]);
 
     useEffect(() => {
         getDictionary(locale).then(setDict);
@@ -79,57 +90,45 @@ function AppStateProvider({ children }: { children: ReactNode }) {
         }
     }, [locale]);
 
-    const [subscription, setSubscription] = useState<'free' | 'pro' | 'enterprise'>('free');
-
-    const purchaseCourse = async (courseId: string) => {
+    const purchaseCourse = useCallback(async (courseId: string) => {
         try {
             await paymentsApi.createPayment({
                 amount: 0,
                 currency: 'USD',
-                provider: 'stripe' as any,
+                provider: 'stripe' as never,
                 metadata: { courseId },
             });
-        } catch (err) {
-            console.warn('Billing API unavailable, saving locally:', err);
+        } catch {
+            // Billing API unavailable, saving locally
         }
-        const newPurchased = [...purchasedCourses, courseId];
-        setPurchasedCourses(newPurchased);
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('omnex-purchased', JSON.stringify(newPurchased));
-        }
-    };
+        setLocalPurchasedCourses(prev => {
+            const newPurchased = [...prev, courseId];
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('omnex-purchased', JSON.stringify(newPurchased));
+            }
+            return newPurchased;
+        });
+    }, []);
 
-    const subscribe = async (planId: 'free' | 'pro' | 'enterprise') => {
+    const subscribe = useCallback(async (planId: 'free' | 'pro' | 'enterprise') => {
         try {
-            // Вызываем реальный API подписки
             await paymentsApi.createPayment({
                 amount: planId === 'pro' ? 29.99 : planId === 'enterprise' ? 99.99 : 0,
                 currency: 'USD',
-                provider: 'stripe' as any,
-                description: `Подписка ${planId}`,
+                provider: 'stripe' as never,
+                description: `Subscription ${planId}`,
                 metadata: { plan: planId },
             });
-        } catch (err) {
-            console.warn('Billing API unavailable, saving locally:', err);
+        } catch {
+            // Billing API unavailable, saving locally
         }
-        setSubscription(planId);
+        setLocalSubscription(planId);
         if (typeof window !== 'undefined') {
             localStorage.setItem('omnex-subscription', planId);
         }
-    };
+    }, []);
 
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const savedSubscription = localStorage.getItem('omnex-subscription') as 'free' | 'pro' | 'enterprise';
-            if (savedSubscription) {
-                setSubscription(savedSubscription);
-            } else if (user?.subscription) {
-                setSubscription(user.subscription);
-            }
-        }
-    }, [user]);
-
-    const value: AppContextType = {
+    const value: AppContextType = useMemo(() => ({
         isAuthenticated,
         isLoading,
         user,
@@ -148,7 +147,7 @@ function AppStateProvider({ children }: { children: ReactNode }) {
         setSelectedFormat,
         selectedCourse,
         setSelectedCourse,
-    };
+    }), [isAuthenticated, isLoading, user, login, register, logout, refetch, locale, dict, purchasedCourses, purchaseCourse, selectedFormat, selectedCourse, subscription, subscribe]);
 
     return (
         <AppContext.Provider value={value}>

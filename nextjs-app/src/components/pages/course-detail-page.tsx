@@ -6,8 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowRight, Check, Star, BookOpen, Clock } from 'lucide-react';
+import Image from 'next/image';
 import { DictionaryFallback } from '@/components/ui/dictionary-fallback';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
+import type { Course, CourseModule, Lesson } from '@/types';
 
 import { ReviewsSection } from '@/components/reviews/reviews-section';
 import { getUserIdFromToken } from '@/lib/utils/auth-helpers';
@@ -36,8 +38,8 @@ export const CourseDetailPage = ({ dict, selectedCourse, setCurrentPage }: Cours
 
             <div className="grid grid-cols-1 gap-12 lg:grid-cols-3">
                 <div className="lg:col-span-2">
-                    <div className="mb-10 aspect-video overflow-hidden rounded-2xl shadow-xl ring-1 ring-border">
-                        <img src={selectedCourse.thumbnail} alt={selectedCourse.title} className="h-full w-full object-cover" />
+                    <div className="relative mb-10 aspect-video overflow-hidden rounded-2xl shadow-xl ring-1 ring-border">
+                        <Image src={selectedCourse.thumbnail || '/placeholder-course.jpg'} alt={selectedCourse.title} fill className="object-cover" />
                     </div>
 
                     <div className="mb-6">
@@ -85,7 +87,7 @@ export const CourseDetailPage = ({ dict, selectedCourse, setCurrentPage }: Cours
 
                         <TabsContent value="curriculum" className="focus-visible:outline-none">
                             <div className="space-y-6">
-                                {(selectedCourse.modules || []).map((module: any, idx: number) => (
+                                {(selectedCourse.modules || []).map((module: CourseModule, idx: number) => (
                                     <Card key={module.id} className="overflow-hidden border-none shadow-sm ring-1 ring-border">
                                         <CardHeader className="bg-muted/30">
                                             <CardTitle className="text-lg">
@@ -94,15 +96,15 @@ export const CourseDetailPage = ({ dict, selectedCourse, setCurrentPage }: Cours
                                         </CardHeader>
                                         <CardContent className="p-0">
                                             <div className="divide-y">
-                                                {module.lessons.map((lesson: any) => (
+                                                {module.lessons?.map((lesson: Lesson) => (
                                                     <div
                                                         key={lesson.id}
                                                         className="flex items-center justify-between p-5 cursor-pointer hover:bg-muted/50 transition-colors group"
                                                         onClick={() => setCurrentPage('lesson')}
                                                     >
                                                         <div className="flex items-center gap-4">
-                                                            <div className={`h-8 w-8 rounded-full flex items-center justify-center border ${lesson.completed ? 'bg-primary border-primary' : 'bg-background'}`}>
-                                                                {lesson.completed ? (
+                                                            <div className={`h-8 w-8 rounded-full flex items-center justify-center border ${lesson.isCompleted ? 'bg-primary border-primary' : 'bg-background'}`}>
+                                                                {lesson.isCompleted ? (
                                                                     <Check className="h-4 w-4 text-white" />
                                                                 ) : (
                                                                     <BookOpen className="h-4 w-4 text-muted-foreground group-hover:text-primary" />

@@ -1,19 +1,19 @@
 'use client';
 
-import { motion } from 'motion/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { PageTransition, FadeIn, StaggerContainer, StaggerItem } from '@/components/ui/page-transition';
-import { AnimatedCard } from '@/components/ui/animated-elements';
 import { CourseCard } from '@/components/course/course-card';
-import { Zap, Clock, BookOpen, TrendingUp } from 'lucide-react';
+import { Zap, Clock } from 'lucide-react';
 import { mockCourses } from '@/lib/api/mock-data';
+import type { Dictionary } from '@/lib/i18n/dictionaries';
+import type { Course } from '@/types';
 
 interface ProgressPageProps {
-    dict: any;
+    dict: Dictionary;
     locale: string;
     onNavigate: (page: string) => void;
-    setSelectedCourse: (course: any) => void;
+    setSelectedCourse: (course: Course) => void;
 }
 
 export function ProgressPage({ dict, locale, onNavigate, setSelectedCourse }: ProgressPageProps) {
@@ -41,7 +41,7 @@ export function ProgressPage({ dict, locale, onNavigate, setSelectedCourse }: Pr
                                     </div>
                                     <Progress value={67} className="h-3 mb-4" />
                                     <p className="text-sm text-muted-foreground bg-primary/5 p-3 rounded-lg border border-primary/10">
-                                        Great job! You've completed 2 courses this month. Keep up the momentum!
+                                        Great job! You&apos;ve completed 2 courses this month. Keep up the momentum!
                                     </p>
                                 </CardContent>
                             </Card>
@@ -90,7 +90,7 @@ export function ProgressPage({ dict, locale, onNavigate, setSelectedCourse }: Pr
                                     key={course.id}
                                     course={course}
                                     dict={dict}
-                                    locale={locale as any}
+                                    locale={locale as import('@/lib/i18n/config').Locale}
                                     onClick={() => {
                                         setSelectedCourse(course);
                                         onNavigate('course-detail');

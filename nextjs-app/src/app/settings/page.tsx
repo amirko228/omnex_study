@@ -27,7 +27,7 @@ export default function SettingsPage() {
         <SettingsPageComponent
             dict={dict}
             locale={locale}
-            user={user}
+            user={user ?? null}
             onDeleteAccount={logout}
             onLocaleChange={setLocale}
             refetchUser={refetchUser}

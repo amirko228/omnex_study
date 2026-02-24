@@ -5,7 +5,7 @@ import { useCourseProgress } from './useCourseProgress';
 export function useCourses() {
     const [purchasedCourses, setPurchasedCourses] = useLocalStorage<string[]>(
         'ai-learning-purchased-courses',
-        mockUser.purchasedCourses
+        mockUser.purchasedCourses ?? []
     );
 
     const [selectedFormat, setSelectedFormat] = useLocalStorage<

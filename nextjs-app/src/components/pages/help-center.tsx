@@ -146,6 +146,7 @@ export function HelpCenter({ dict }: HelpCenterProps) {
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       }]);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewMode]);
 
   // Close search dropdown on click outside
@@ -242,7 +243,7 @@ export function HelpCenter({ dict }: HelpCenterProps) {
 
     setEmailSending(true);
     try {
-      const result = await notificationsApi.sendSupportEmail({
+      await notificationsApi.sendSupportEmail({
         subject: emailForm.subject || `Обращение от ${emailForm.name}`,
         message: `От: ${emailForm.name} (${emailForm.email})\n\n${emailForm.message}`,
       });
@@ -250,7 +251,7 @@ export function HelpCenter({ dict }: HelpCenterProps) {
       toast.success(hc.email_sent_success || 'Сообщение отправлено! Мы ответим в течение 24 часов.');
       setEmailForm({ name: '', email: '', subject: '', message: '' });
       setTimeout(() => setViewMode('main'), 2000);
-    } catch (error) {
+    } catch {
       toast.error(hc.email_send_error || 'Ошибка отправки. Попробуйте позже.');
     } finally {
       setEmailSending(false);
@@ -322,17 +323,17 @@ export function HelpCenter({ dict }: HelpCenterProps) {
                   setShowSearchResults(false);
                   (e.target as HTMLInputElement).blur();
                 }
-                if (e.key === 'Enter' && searchResults.length > 0) {
-                  const first = searchResults[0];
-                  if (first.type === 'faq') {
-                    setViewMode('main');
-                    setShowSearchResults(false);
-                    setSearchQuery('');
-                  } else {
-                    openArticle(first as unknown as HelpArticle, kbCategories.find((c) => c.id === (first as any).categoryId));
-                    setShowSearchResults(false);
-                    setSearchQuery('');
-                  }
+                  if (e.key === 'Enter' && searchResults.length > 0) {
+                    const first = searchResults[0];
+                    if (first.type === 'faq') {
+                      setViewMode('main');
+                      setShowSearchResults(false);
+                      setSearchQuery('');
+                    } else {
+                      openArticle(first as unknown as HelpArticle, kbCategories.find((c) => c.id === (first as unknown as { categoryId: string }).categoryId));
+                      setShowSearchResults(false);
+                      setSearchQuery('');
+                    }
                 }
               }}
             />
@@ -354,7 +355,7 @@ export function HelpCenter({ dict }: HelpCenterProps) {
                   exit={{ opacity: 0, y: -10 }}
                   className="absolute top-full left-0 right-0 mt-2 bg-card border-2 rounded-xl shadow-2xl overflow-hidden z-50 max-h-[400px] overflow-y-auto"
                 >
-                  {searchResults.slice(0, 8).map((result: any) => (
+                  {searchResults.slice(0, 8).map((result) => (
                     <button
                       key={result.id}
                       className="w-full text-left px-5 py-3 hover:bg-muted/50 transition-colors flex items-start gap-3 border-b last:border-0"

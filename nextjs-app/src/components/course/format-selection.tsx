@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   FileText,
   ListChecks,
@@ -24,7 +23,7 @@ type FormatSelectionProps = {
   onBack: () => void;
 };
 
-export function FormatSelection({ dict, courseTitle, onSelectFormat, onBack }: FormatSelectionProps) {
+export function FormatSelection({ dict, onSelectFormat, onBack }: FormatSelectionProps) {
   const [selectedFormat, setSelectedFormat] = useState<CourseFormat | null>(null);
 
   const formatConfig = {

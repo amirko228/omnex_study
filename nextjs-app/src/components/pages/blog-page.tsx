@@ -62,12 +62,6 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
     const localFeaturedPosts = useMemo(() => getFeaturedPosts(locale), [locale]);
     const localPosts = useMemo(() => getLocalBlogPosts(locale), [locale]);
 
-    // Null-safety проверка словаря - перенесена ниже хуков
-    if (!dict?.blog) {
-        return <DictionaryFallback />;
-    }
-
-    // Close search dropdown on click outside
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
@@ -78,7 +72,6 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Helper: get a snippet around the match
     const getSnippet = useCallback((text: string, q: string, maxLen = 120): string => {
         if (!text || !q) return text?.slice(0, maxLen) || '';
         const lowerText = text.toLowerCase();
@@ -94,7 +87,6 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
         return snippet;
     }, []);
 
-    // Live search results for dropdown
     const liveSearchResults = useMemo(() => {
         const q = searchQuery.trim().toLowerCase();
         if (q.length < 1) return [];
@@ -125,18 +117,15 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
                 setFeaturedApiPosts(popularResult || []);
                 setUseApi(true);
             } else {
-                // Если API пусто или ошибка — используем локальные данные
                 setUseApi(false);
             }
-        } catch (_error) {
-            console.log('Blog API not available, using local data');
+        } catch {
             setUseApi(false);
         } finally {
             setIsLoading(false);
         }
     }, []);
 
-    // Посты из API
     useEffect(() => {
         loadPosts();
     }, [loadPosts]);
@@ -144,12 +133,10 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
     const filteredPosts = useMemo(() => {
         let posts: (ApiBlogPost | LocalBlogPost)[] = useApi ? apiPosts : localPosts;
 
-        // Filter by category
         if (selectedCategory !== 'all') {
             posts = posts.filter(post => post.category === selectedCategory);
         }
 
-        // Filter by search query
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
             posts = posts.filter(post =>
@@ -166,19 +153,22 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
 
     const categories: Array<BlogCategory | 'all'> = ['all', 'AI', 'Programming', 'Career', 'Design', 'Business', 'Learning'];
 
-    // Загрузка избранных постов
     const loadFavorites = async () => {
         if (!isAuthenticated) return;
         try {
             setFavoritesLoading(true);
             const result = await getFavoritePosts();
             setFavoritePosts(result);
-        } catch (_error) {
-            console.log('Failed to load favorites');
+        } catch {
+            // Favorites unavailable
         } finally {
             setFavoritesLoading(false);
         }
     };
+
+    if (!dict?.blog) {
+        return <DictionaryFallback />;
+    }
 
     const handleToggleFavorites = () => {
         if (showFavorites) {

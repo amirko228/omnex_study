@@ -9,10 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import {
     Send,
     Bot,
-    User,
     Loader2,
     Sparkles,
-    BookOpen,
     Clock,
     GraduationCap,
     CheckCircle2,
@@ -104,13 +102,11 @@ export function AICourseCreatorChat({
             hasLoadedHistory = true;
 
             try {
-                console.log('[AI Chat] Loading history for session:', sessionId);
                 const history = await loadHistory();
 
                 if (history && history.length > 0) {
-                    console.log('[AI Chat] Loaded history:', history.length, 'messages');
                     // Преобразуем в формат Message компонента с правильными типами
-                    const formattedHistory = history.map((msg: any) => {
+                    const formattedHistory = history.map((msg) => {
                         const baseMessage = {
                             id: msg.id,
                             role: msg.role,
@@ -138,17 +134,16 @@ export function AICourseCreatorChat({
                             };
                         }
                     });
-                    setMessages(formattedHistory);
-                } else {
-                    console.log('[AI Chat] No history found for this session');
+                    setMessages(formattedHistory as Message[]);
                 }
-            } catch (error) {
-                console.error('[AI Chat] Failed to load history:', error);
+            } catch {
+                // silently ignored
             }
         }
 
         loadChatHistory();
-    }, [sessionId]); // Только sessionId в зависимостях
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sessionId]);
 
     // Парсинг запроса пользователя
     const parseUserRequest = (text: string): { topic: string; level: DifficultyLevel; duration: number; formats: LessonFormat[] } => {
@@ -202,9 +197,7 @@ export function AICourseCreatorChat({
 
         // Сохранить user message в БД
         if (sessionId) {
-            saveMessage('user', userMessage.content).catch(err =>
-                console.error('Failed to save user message:', err)
-            );
+            saveMessage('user', userMessage.content).catch(() => {});
         }
 
         const userInput = textToSend.trim();
@@ -231,9 +224,7 @@ export function AICourseCreatorChat({
 
             // Сохранить course-preview message в БД с metadata
             if (sessionId) {
-                saveMessage('ai', previewMessage.content, { type: 'course-preview', courseData: courseParams }).catch(err =>
-                    console.error('Failed to save course-preview message:', err)
-                );
+                saveMessage('ai', previewMessage.content, { type: 'course-preview', courseData: courseParams }).catch(() => {});
             }
 
             setTimeout(() => {
@@ -242,7 +233,7 @@ export function AICourseCreatorChat({
 
         } else {
             try {
-                const response = await getAIResponse(userInput, locale, dict);
+                const response = await getAIResponse(userInput, locale);
                 const aiMessage: Message = {
                     id: (Date.now() + 1).toString(),
                     role: 'ai',
@@ -254,12 +245,10 @@ export function AICourseCreatorChat({
 
                 // Сохранить AI message в БД
                 if (sessionId) {
-                    saveMessage('ai', aiMessage.content).catch(err =>
-                        console.error('Failed to save AI message:', err)
-                    );
+                    saveMessage('ai', aiMessage.content).catch(() => {});
                 }
-            } catch (error) {
-                console.error('AI chat error:', error);
+            } catch {
+                // silently ignored
             } finally {
                 setIsLoading(false);
             }
@@ -291,9 +280,7 @@ export function AICourseCreatorChat({
 
         // Сохранить generating message в БД с metadata
         if (sessionId) {
-            saveMessage('ai', generatingMessage.content, { type: 'generating', generationSteps: steps }).catch(err =>
-                console.error('Failed to save generating message:', err)
-            );
+            saveMessage('ai', generatingMessage.content, { type: 'generating', generationSteps: steps }).catch(() => {});
         }
 
         // Simulate progress steps
@@ -358,8 +345,7 @@ export function AICourseCreatorChat({
                 }, 800);
             });
 
-        } catch (error) {
-            console.error('Course generation error:', error);
+        } catch {
             setIsGenerating(false);
         }
     };
@@ -594,7 +580,6 @@ export function AICourseCreatorChat({
                                     const success = await clearChat();
                                     if (success) {
                                         setMessages([]);
-                                        console.log('Chat cleared');
                                     }
                                 }}
                                 className="h-9 w-9 text-muted-foreground hover:text-destructive transition-colors"
@@ -628,18 +613,7 @@ export function AICourseCreatorChat({
     );
 }
 
-// Helpers
-function getCoursePreviewText(locale: Locale, params: { topic: string; level: DifficultyLevel; duration: number }): string {
-    // This content is not displayed directly in the new design (replaced by card), but used for state logic
-    return "Preview";
-}
-
-function getCourseReadyText(locale: Locale, title: string): string {
-    return title;
-}
-
-// Updated to use dict for responses
-async function getAIResponse(input: string, locale: Locale, dict: Dictionary): Promise<string> {
+async function getAIResponse(input: string, locale: Locale): Promise<string> {
     const lowerInput = input.toLowerCase();
 
     if (lowerInput.includes('hello') || lowerInput.includes('hi') || lowerInput.includes('привет')) {

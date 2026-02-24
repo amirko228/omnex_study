@@ -494,7 +494,7 @@ export function validateAIResponse(response: unknown, expectedType: 'course' | '
 
   switch (expectedType) {
     case 'course': {
-      const r = response as { title?: string; modules?: any[] };
+      const r = response as { title?: string; modules?: unknown[] };
       return !!(r.title && r.modules && Array.isArray(r.modules));
     }
     case 'translation':
@@ -502,7 +502,7 @@ export function validateAIResponse(response: unknown, expectedType: 'course' | '
     case 'chat':
       return typeof response === 'string' && response.length > 0;
     case 'quiz': {
-      const r = response as Array<{ question?: string; options?: any[] }>;
+      const r = response as Array<{ question?: string; options?: unknown[] }>;
       return Array.isArray(r) && r.every(q => q.question && q.options && Array.isArray(q.options));
     }
     default:

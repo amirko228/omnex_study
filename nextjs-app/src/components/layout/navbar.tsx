@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, GraduationCap, Globe, Moon, Sun, User, LogOut, Settings, Menu, X, Sparkles } from 'lucide-react';
+import { Globe, Moon, Sun, User, LogOut, Settings, Menu, X, Sparkles } from 'lucide-react';
 import { useTheme } from '@/lib/theme/theme-provider';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 import type { Locale } from '@/lib/i18n/config';
@@ -41,7 +41,6 @@ export function Navbar({
   currentPage,
   setCurrentPage,
   user,
-  isPublic = false,
   onLogout
 }: NavbarProps) {
   const { theme, setTheme } = useTheme();

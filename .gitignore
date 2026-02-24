@@ -50,6 +50,9 @@ coverage/
 backend/prisma/*.db
 backend/prisma/*.db-journal
 
+# Temporary lint files
+lint_*.txt
+
 # Misc
 *.tsbuildinfo
 .turbo/

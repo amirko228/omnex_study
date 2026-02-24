@@ -50,8 +50,6 @@ export function ReviewsSection({ courseId, currentUserId, dict }: ReviewsSection
     const loadReviews = async () => {
         try {
             setIsLoading(true);
-            console.log('[ReviewsSection] Loading reviews for courseId:', courseId);
-            console.log('[ReviewsSection] Current userId:', currentUserId);
 
             const response = await apiClient.get<{
                 data: Review[];
@@ -61,13 +59,9 @@ export function ReviewsSection({ courseId, currentUserId, dict }: ReviewsSection
                 totalPages: number;
             }>(`/courses/${courseId}/reviews`, { page, limit });
 
-            console.log('[ReviewsSection] API response:', response);
-
             // Безопасная проверка наличия данных
             if (response?.data) {
                 const reviewsData = response.data.data || [];
-                console.log('[ReviewsSection] Reviews data:', reviewsData);
-                console.log('[ReviewsSection] Total reviews:', response.data.total);
 
                 setReviews(reviewsData);
                 setTotalPages(response.data.totalPages || 1);
@@ -78,14 +72,10 @@ export function ReviewsSection({ courseId, currentUserId, dict }: ReviewsSection
                     totalCount: response.data.total || 0,
                 });
             } else {
-                // Fallback на пустые данные если response пустой
-                console.warn('[ReviewsSection] Empty response, setting empty reviews');
                 setReviews([]);
                 setStats({ averageRating: 0, totalCount: 0 });
             }
-        } catch (error) {
-            console.error('[ReviewsSection] Failed to load reviews:', error);
-            // Устанавливаем пустой массив при ошибке
+        } catch {
             setReviews([]);
             setStats({ averageRating: 0, totalCount: 0 });
         } finally {
@@ -95,6 +85,7 @@ export function ReviewsSection({ courseId, currentUserId, dict }: ReviewsSection
 
     useEffect(() => {
         loadReviews();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [courseId, page]);
 
     const handleDelete = async (reviewId: string) => {
@@ -103,8 +94,7 @@ export function ReviewsSection({ courseId, currentUserId, dict }: ReviewsSection
         try {
             await apiClient.delete(`/reviews/${reviewId}`);
             await loadReviews();
-        } catch (error) {
-            console.error('Failed to delete review:', error);
+        } catch {
             alert('Не удалось удалить отзыв');
         }
     };
@@ -112,15 +102,6 @@ export function ReviewsSection({ courseId, currentUserId, dict }: ReviewsSection
     // Проверяем, оставил ли текущий пользователь отзыв
     // (Ищем среди загруженных, но в идеале бэкенд должен возвращать этот флаг отдельно)
     const userReview = reviews.find((r) => String(r.user?.id) === String(currentUserId));
-
-    console.log('[ReviewsSection] Condition check for Add Review button:');
-    console.log('  - currentUserId:', currentUserId, typeof currentUserId);
-    console.log('  - isLoading:', isLoading);
-    console.log('  - userReview found:', !!userReview);
-    console.log('  - reviews count:', reviews.length);
-    if (userReview) {
-        console.log('  - existing review ID:', userReview.id);
-    }
 
     // Helper для pluralization отзывов
     const getReviewsCountText = (count: number) => {
@@ -168,7 +149,6 @@ export function ReviewsSection({ courseId, currentUserId, dict }: ReviewsSection
                     courseId={courseId}
                     dict={dict}
                     onSuccess={() => {
-                        console.log('[ReviewsSection] Review submitted successfully, reloading reviews...');
                         setShowAddForm(false);
                         loadReviews();
                     }}
@@ -190,15 +170,7 @@ export function ReviewsSection({ courseId, currentUserId, dict }: ReviewsSection
                 </Card>
             ) : (
                 <div className="space-y-4">
-                    {reviews.map((review, index) => {
-                        console.log(`[ReviewsSection] Rendering review ${index}:`, {
-                            reviewId: review.id,
-                            reviewUserId: review.user.id,
-                            currentUserId: currentUserId,
-                            isOwnReview: review.user.id === currentUserId
-                        });
-
-                        return (
+                    {reviews.map((review) => (
                             <Card key={review.id} className="p-6">
                                 <div className="flex items-start gap-4">
                                     {/* Avatar */}
@@ -246,8 +218,7 @@ export function ReviewsSection({ courseId, currentUserId, dict }: ReviewsSection
                                     </div>
                                 </div>
                             </Card>
-                        );
-                    })}
+                    ))}
                 </div>
             )}
 

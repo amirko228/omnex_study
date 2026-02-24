@@ -16,18 +16,24 @@ type LessonChatProps = {
 };
 
 export function LessonChat({ dict, initialMessages = [] }: LessonChatProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>(
-    initialMessages.length > 0
-      ? initialMessages
-      : [
-        {
-          id: '1',
-          role: 'assistant',
-          content: dict.lesson.chat.placeholder,
-          timestamp: new Date().toISOString(),
-        },
-      ]
-  );
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    if (initialMessages.length > 0) {
+      return initialMessages.map(msg => ({
+        ...msg,
+        chatId: msg.chatId || 'default-lesson-chat',
+        timestamp: msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp)
+      }));
+    }
+    return [
+      {
+        id: '1',
+        chatId: 'default-lesson-chat',
+        role: 'assistant',
+        content: dict.lesson.chat.placeholder,
+        timestamp: new Date(),
+      },
+    ];
+  });
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -36,9 +42,10 @@ export function LessonChat({ dict, initialMessages = [] }: LessonChatProps) {
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
+      chatId: messages[0]?.chatId || 'default-lesson-chat',
       role: 'user',
       content: input,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -49,9 +56,10 @@ export function LessonChat({ dict, initialMessages = [] }: LessonChatProps) {
     setTimeout(() => {
       const aiMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
+        chatId: messages[0]?.chatId || 'default-lesson-chat',
         role: 'assistant',
         content: `I understand you're asking about "${input}". Let me help you with that. [This is a mock AI response. In production, this would be connected to a real AI API.]`,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date(),
       };
       setMessages((prev) => [...prev, aiMessage]);
       setIsLoading(false);

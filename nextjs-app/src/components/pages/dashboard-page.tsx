@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { BookOpen, Clock, Award, TrendingUp, Search, Sparkles } from 'lucide-react';
 import { motion } from 'motion/react';
 import { PageTransition, FadeIn, StaggerContainer, StaggerItem, SlideIn } from '@/components/ui/page-transition';
@@ -43,7 +42,7 @@ export const DashboardPage = ({ dict, user, setCurrentPage }: DashboardPageProps
                 if (result.success && result.data) {
                     setStats(result.data);
                 }
-            } catch (err) {
+            } catch {
                 // Если API недоступен — оставляем нули
             }
         };

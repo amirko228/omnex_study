@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function LoginPage() {
-    const { dict, isAuthenticated, login } = useAppContext();
+    const { dict, isAuthenticated } = useAppContext();
     const router = useRouter();
 
     useEffect(() => {

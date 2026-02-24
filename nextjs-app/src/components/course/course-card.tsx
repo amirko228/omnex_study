@@ -22,7 +22,7 @@ const formatIcons = {
   assignment: ClipboardCheck,
 };
 
-export function CourseCard({ course, dict, locale, onClick }: CourseCardProps) {
+export function CourseCard({ course, dict, onClick }: CourseCardProps) {
   // Защита от undefined
   const formatLabels = {
     text: dict.formats?.text || 'Text',

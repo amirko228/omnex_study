@@ -12,7 +12,6 @@ export function ClientLayout({ children }: { children: ReactNode }) {
         dict,
         locale,
         setLocale,
-        isAuthenticated,
         user,
         logout
     } = useAppContext();

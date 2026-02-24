@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from 'react';
 import { useTheme } from '@/lib/theme/theme-provider';
 import { Toaster as Sonner, ToasterProps } from "sonner";
 

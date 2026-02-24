@@ -5,7 +5,6 @@ import { motion } from 'motion/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Slider } from '@/components/ui/slider';
 import { 
   GraduationCap, 
   Zap, 
@@ -51,8 +50,8 @@ export function AIDifficultyAdapter({
       });
 
       onAdapted(adaptedContent, targetLevel);
-    } catch (error) {
-      console.error('Difficulty adaptation error:', error);
+    } catch {
+      // silently ignored
     } finally {
       setIsAdapting(false);
     }

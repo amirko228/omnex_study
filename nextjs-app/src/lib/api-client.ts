@@ -108,8 +108,6 @@ class ApiClient {
           sessionStorage.getItem(config.auth.refreshTokenKey);
 
         if (refreshToken) {
-          console.log('[ApiClient] Token expired, attempting refresh...');
-
           try {
             // Call refresh endpoint directly to avoid recursion
             const refreshRes = await fetch(`${this.baseUrl}/auth/refresh`, {
@@ -124,7 +122,6 @@ class ApiClient {
               const newRefreshToken = refreshData.data?.refreshToken || refreshData.refreshToken;
 
               if (newToken) {
-                console.log('[ApiClient] Token refreshed successfully');
                 // Save new tokens
                 const remember = !!localStorage.getItem(config.auth.tokenKey);
                 this.setToken(newToken, remember);
@@ -137,8 +134,8 @@ class ApiClient {
                 return this.request<T>(endpoint, { ...options, _retry: true });
               }
             }
-          } catch (refreshErr) {
-            console.error('[ApiClient] Refresh token failed:', refreshErr);
+          } catch {
+            // silently ignored
           }
         }
 
@@ -173,8 +170,6 @@ class ApiClient {
         message: data.message,
       };
     } catch (error: unknown) {
-      console.warn('API Request failed:', error instanceof Error ? error.message : 'Network error');
-
       const errorMessage = error instanceof Error ? error.message : 'Network error occurred';
 
       return {

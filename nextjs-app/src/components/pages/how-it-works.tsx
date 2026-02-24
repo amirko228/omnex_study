@@ -216,7 +216,7 @@ export function HowItWorks({ onNavigate, dict, isAuthenticated = false }: HowItW
                   {dict.landing.pricing.subtitle}
                 </p>
                 <ul className="space-y-3">
-                  {dict.howItWorks.pricing_features.map((item, i) => (
+                  {dict.howItWorks.pricing_features.map((item: string, i: number) => (
                     <li key={i} className="flex items-center gap-3">
                       <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
                       <span className="text-foreground">{item}</span>

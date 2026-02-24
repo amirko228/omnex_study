@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { apiClient } from '@/lib/api-client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,7 +32,7 @@ interface UserStats {
   streak: number;
 }
 
-export function ProfileSettings({ dict, locale, user }: ProfileSettingsProps) {
+export function ProfileSettings({ dict, user }: ProfileSettingsProps) {
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [bio, setBio] = useState(user?.bio || '');
@@ -52,13 +52,13 @@ export function ProfileSettings({ dict, locale, user }: ProfileSettingsProps) {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const result = await apiClient.get<any>('/users/me');
+        const result = await apiClient.get<import('@/types').User>('/users/me');
         if (result.success && result.data) {
           if (result.data.bio) setBio(result.data.bio);
           if (result.data.name) setName(result.data.name);
           if (result.data.avatar) setAvatarUrl(result.data.avatar);
         }
-      } catch (err) {
+      } catch {
         // fallback на данные из пропсов
       }
     };
@@ -73,7 +73,7 @@ export function ProfileSettings({ dict, locale, user }: ProfileSettingsProps) {
         if (result.success && result.data) {
           setStats(result.data);
         }
-      } catch (err) {
+      } catch {
         // Оставляем нули
       }
     };
@@ -84,14 +84,14 @@ export function ProfileSettings({ dict, locale, user }: ProfileSettingsProps) {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const result = await apiClient.patch('/users/me', { name, bio });
+      const result = await apiClient.patch<import('@/types').User>('/users/me', { name, bio });
 
       if (result.success) {
         toast.success(dict.profile.profile_updated);
       } else {
         toast.error(result.error?.message || 'Ошибка сохранения профиля');
       }
-    } catch (err) {
+    } catch {
       toast.error('Ошибка сохранения профиля');
     } finally {
       setIsSaving(false);
@@ -117,7 +117,7 @@ export function ProfileSettings({ dict, locale, user }: ProfileSettingsProps) {
       } else {
         toast.error(result.error?.message || 'Ошибка загрузки аватара');
       }
-    } catch (err) {
+    } catch {
       toast.error('Ошибка загрузки аватара');
     }
   };

@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/ui/page-transition';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import Image from 'next/image';
 import { Sparkles, ArrowRight } from 'lucide-react';
 import { AnimatedCard } from '@/components/ui/animated-elements';
 import { CardHeader, CardTitle } from '@/components/ui/card';
@@ -64,10 +65,11 @@ export function BlogPreviewSection({ dict, onNavigate }: BlogPreviewSectionProps
                                 >
                                     <AnimatedCard hoverable className="overflow-hidden cursor-pointer h-full flex flex-col" onClick={() => onNavigate('blog')}>
                                         <div className="relative aspect-video overflow-hidden bg-muted">
-                                            <img
-                                                src={article.image}
+                                            <Image
+                                                src={article.image || '/placeholder-blog.jpg'}
                                                 alt={article.title}
-                                                className="w-full h-full object-cover"
+                                                fill
+                                                className="object-cover"
                                             />
                                             <div className="absolute top-3 left-3">
                                                 <Badge variant="secondary" className="text-xs">

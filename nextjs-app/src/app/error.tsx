@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle } from 'lucide-react';
 
@@ -11,10 +10,6 @@ export default function Error({
     error: Error & { digest?: string };
     reset: () => void;
 }) {
-    useEffect(() => {
-        console.error(error);
-    }, [error]);
-
     return (
         <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-4">
             <div className="flex max-w-md flex-col items-center text-center space-y-4">

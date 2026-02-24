@@ -23,8 +23,7 @@ export function useLocalStorage<T>(
     try {
       const item = window.localStorage.getItem(key);
       return item ? (JSON.parse(item) as T) : initialValue;
-    } catch (error) {
-      console.warn(`Error reading localStorage key "${key}":`, error);
+    } catch {
       return initialValue;
     }
   }, [initialValue, key]);
@@ -37,9 +36,6 @@ export function useLocalStorage<T>(
     (value) => {
       // Проверка SSR
       if (typeof window === 'undefined') {
-        console.warn(
-          `Tried setting localStorage key "${key}" even though environment is not a client`
-        );
         return;
       }
 
@@ -59,8 +55,8 @@ export function useLocalStorage<T>(
             detail: { key, newValue },
           })
         );
-      } catch (error) {
-        console.warn(`Error setting localStorage key "${key}":`, error);
+      } catch {
+        // silently ignored
       }
     },
     [key, storedValue]
@@ -82,8 +78,8 @@ export function useLocalStorage<T>(
           detail: { key, newValue: initialValue },
         })
       );
-    } catch (error) {
-      console.warn(`Error removing localStorage key "${key}":`, error);
+    } catch {
+      // silently ignored
     }
   }, [key, initialValue]);
 
@@ -143,9 +139,8 @@ export const clearAllStorage = (): void => {
     // Dispatch event для синхронизации
     window.dispatchEvent(new Event('storage'));
 
-    console.log('✅ All app data cleared from localStorage');
-  } catch (error) {
-    console.error('Error clearing localStorage:', error);
+  } catch {
+    // silently ignored
   }
 };
 
@@ -160,8 +155,7 @@ export const getStoredValue = <T,>(key: string, defaultValue: T): T => {
   try {
     const item = window.localStorage.getItem(key);
     return item ? (JSON.parse(item) as T) : defaultValue;
-  } catch (error) {
-    console.warn(`Error reading localStorage key "${key}":`, error);
+  } catch {
     return defaultValue;
   }
 };
@@ -183,8 +177,8 @@ export const setStoredValue = <T,>(key: string, value: T): void => {
         detail: { key, newValue: value },
       })
     );
-  } catch (error) {
-    console.warn(`Error setting localStorage key "${key}":`, error);
+  } catch {
+    // silently ignored
   }
 };
 
@@ -199,8 +193,8 @@ export const removeStoredValue = (key: string): void => {
   try {
     window.localStorage.removeItem(key);
     window.dispatchEvent(new Event('storage'));
-  } catch (error) {
-    console.warn(`Error removing localStorage key "${key}":`, error);
+  } catch {
+    // silently ignored
   }
 };
 
@@ -237,8 +231,8 @@ export const getLocalStorageSize = (): number => {
         total += window.localStorage[key].length + key.length;
       }
     }
-  } catch (error) {
-    console.warn('Error calculating localStorage size:', error);
+  } catch {
+    // silently ignored
   }
 
   return total;
@@ -268,8 +262,8 @@ export const exportAppData = (): Record<string, unknown> => {
         }
       }
     }
-  } catch (error) {
-    console.warn('Error exporting app data:', error);
+  } catch {
+    // silently ignored
   }
 
   return data;
@@ -291,8 +285,7 @@ export const importAppData = (data: Record<string, unknown>): void => {
     // Dispatch event для синхронизации
     window.dispatchEvent(new Event('storage'));
 
-    console.log('✅ App data imported successfully');
-  } catch (error) {
-    console.error('Error importing app data:', error);
+  } catch {
+    // silently ignored
   }
 };

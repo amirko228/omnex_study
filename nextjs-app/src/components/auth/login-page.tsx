@@ -46,11 +46,9 @@ export const LoginPage = ({ dict, setCurrentPage }: LoginPageProps) => {
       const oauthUrl = data?.data?.url || data?.url;
       if (oauthUrl) {
         window.location.href = oauthUrl;
-      } else {
-        console.error('OAuth: URL не получен', data);
       }
-    } catch (err) {
-      console.error('OAuth error:', err);
+    } catch {
+      // silently ignored
     }
   };
 

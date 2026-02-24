@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'motion/react';
+import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +13,6 @@ import {
   Clock,
   BookOpen,
   Search,
-  Filter,
   ShoppingCart,
   CheckCircle2
 } from 'lucide-react';
@@ -37,14 +37,13 @@ export function CoursesCatalog({
   onViewCourse,
   dict
 }: CoursesCatalogProps) {
-  // Null-safety проверка словаря
-  if (!dict?.courses) {
-    return <DictionaryFallback />;
-  }
-
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLevel, setSelectedLevel] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+
+  if (!dict?.courses) {
+    return <DictionaryFallback />;
+  }
 
   // Get unique categories
   const categories = ['all', ...new Set(courses.map(c => c.category))];
@@ -54,7 +53,7 @@ export function CoursesCatalog({
   const filteredCourses = courses.filter(course => {
     const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesLevel = selectedLevel === 'all' || course.level === selectedLevel;
+    const matchesLevel = selectedLevel === 'all' || course.difficulty === selectedLevel;
     const matchesCategory = selectedCategory === 'all' || course.category === selectedCategory;
 
     return matchesSearch && matchesLevel && matchesCategory;
@@ -161,10 +160,11 @@ export function CoursesCatalog({
                   <Card className="h-full flex flex-col hover:shadow-xl transition-shadow duration-300">
                     {/* Thumbnail */}
                     <div className="relative h-48 overflow-hidden rounded-t-lg">
-                      <img
-                        src={course.thumbnail}
+                      <Image
+                        src={course.thumbnail || '/placeholder-course.jpg'}
                         alt={course.title}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
                       />
                       {purchased && (
                         <div className="absolute top-3 right-3">
@@ -174,8 +174,8 @@ export function CoursesCatalog({
                           </Badge>
                         </div>
                       )}
-                      <Badge className={`absolute top-3 left-3 ${getLevelColor(course.level)}`}>
-                        {getLevelText(course.level)}
+                      <Badge className={`absolute top-3 left-3 ${getLevelColor(course.difficulty)}`}>
+                        {getLevelText(course.difficulty)}
                       </Badge>
                     </div>
 
@@ -195,7 +195,7 @@ export function CoursesCatalog({
                         </div>
                         <div className="flex items-center gap-1.5">
                           <Users className="h-4 w-4" />
-                          <span>{course.studentsCount.toLocaleString()}</span>
+                          <span>{(course.studentsCount || 0).toLocaleString()}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <BookOpen className="h-4 w-4" />

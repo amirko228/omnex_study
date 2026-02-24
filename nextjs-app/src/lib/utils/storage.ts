@@ -21,8 +21,7 @@ export const storage = {
       } catch {
         return item as unknown as T;
       }
-    } catch (error) {
-      console.error(`Error reading from localStorage: ${key}`, error);
+    } catch {
       return null;
     }
   },
@@ -36,8 +35,8 @@ export const storage = {
     try {
       const serialized = typeof value === 'string' ? value : JSON.stringify(value);
       localStorage.setItem(key, serialized);
-    } catch (error) {
-      console.error(`Error writing to localStorage: ${key}`, error);
+    } catch {
+      // write failed
     }
   },
 
@@ -49,8 +48,8 @@ export const storage = {
 
     try {
       localStorage.removeItem(key);
-    } catch (error) {
-      console.error(`Error removing from localStorage: ${key}`, error);
+    } catch {
+      // remove failed
     }
   },
 
@@ -62,8 +61,8 @@ export const storage = {
 
     try {
       localStorage.clear();
-    } catch (error) {
-      console.error('Error clearing localStorage', error);
+    } catch {
+      // clear failed
     }
   },
 
@@ -83,8 +82,7 @@ export const storage = {
 
     try {
       return Object.keys(localStorage);
-    } catch (error) {
-      console.error('Error getting localStorage keys', error);
+    } catch {
       return [];
     }
   },
@@ -106,8 +104,7 @@ export const sessionStorage = {
       } catch {
         return item as unknown as T;
       }
-    } catch (error) {
-      console.error(`Error reading from sessionStorage: ${key}`, error);
+    } catch {
       return null;
     }
   },
@@ -118,8 +115,8 @@ export const sessionStorage = {
     try {
       const serialized = typeof value === 'string' ? value : JSON.stringify(value);
       window.sessionStorage.setItem(key, serialized);
-    } catch (error) {
-      console.error(`Error writing to sessionStorage: ${key}`, error);
+    } catch {
+      // write failed
     }
   },
 
@@ -128,8 +125,8 @@ export const sessionStorage = {
 
     try {
       window.sessionStorage.removeItem(key);
-    } catch (error) {
-      console.error(`Error removing from sessionStorage: ${key}`, error);
+    } catch {
+      // remove failed
     }
   },
 
@@ -138,8 +135,8 @@ export const sessionStorage = {
 
     try {
       window.sessionStorage.clear();
-    } catch (error) {
-      console.error('Error clearing sessionStorage', error);
+    } catch {
+      // clear failed
     }
   },
 

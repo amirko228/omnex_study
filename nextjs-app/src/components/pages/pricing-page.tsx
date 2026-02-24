@@ -2,9 +2,8 @@
 
 import { useState } from 'react';
 import { useAppContext } from '@/app/providers';
-import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Check } from 'lucide-react';
 import { PageTransition, FadeIn, StaggerContainer, StaggerItem } from '@/components/ui/page-transition';
@@ -20,7 +19,7 @@ import { paymentsApi } from '@/lib/api/payments';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 
 export function PricingPage({ dict, onNavigate }: PricingPageProps) {
-    const { isAuthenticated, subscribe, user, subscription } = useAppContext();
+    const { isAuthenticated, subscribe, subscription } = useAppContext();
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [pendingPlan, setPendingPlan] = useState<{ name: string, price: string } | null>(null);
 
@@ -79,8 +78,8 @@ export function PricingPage({ dict, onNavigate }: PricingPageProps) {
             if (paymentId) {
                 await paymentsApi.confirmPayment(paymentId);
             }
-        } catch (_err) {
-            console.warn('Payment API error (continuing with subscription):', _err);
+        } catch {
+            // silently ignored
         }
 
         try {
@@ -89,20 +88,9 @@ export function PricingPage({ dict, onNavigate }: PricingPageProps) {
             toast.success(`Вы успешно подписались на ${pendingPlan.name}!`);
             setIsPaymentModalOpen(false);
             setPendingPlan(null);
-        } catch (error) {
-            console.error(error);
+        } catch {
             throw new Error("Payment failed");
         }
-    };
-
-    const getButtonText = (planType: 'free' | 'pro' | 'enterprise') => {
-        const currentSub = subscription || 'free';
-        if (currentSub === planType) return "Current Plan";
-
-        // Simple logic: if current is free, others are "Upgrade". 
-        // If current is pro, free is "Downgrade", enterprise is "Upgrade".
-        // For simplicity, just use the CTA from dict, unless it's the current plan.
-        return null;
     };
 
     return (

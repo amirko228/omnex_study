@@ -65,8 +65,7 @@ export function AICourseGenerator({ dict, locale, onCourseGenerated, onCancel }:
         onCourseGenerated(course.id);
       }, 500);
 
-    } catch (error) {
-      console.error('Course generation error:', error);
+    } catch {
       setIsGenerating(false);
       setGenerationProgress(0);
     }

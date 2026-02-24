@@ -15,7 +15,7 @@ const defaultUserData: UserData = {
     id: mockUser.id,
     name: mockUser.name,
     email: mockUser.email,
-    avatar: mockUser.avatar,
+    avatar: mockUser.avatar || '',
     createdAt: new Date().toISOString(),
 };
 
@@ -27,7 +27,7 @@ export function useUser(isAuthenticated: boolean) {
 
     const [purchasedCourses] = useLocalStorage<string[]>(
         'ai-learning-purchased-courses',
-        mockUser.purchasedCourses
+        mockUser.purchasedCourses ?? []
     );
 
     const courseProgress = useCourseProgress();

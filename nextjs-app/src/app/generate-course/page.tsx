@@ -60,9 +60,7 @@ export default function GenerateCoursePage() {
                         locale={locale}
                         dict={dict}
                         subscription={subscription}
-                        onCourseGenerated={(courseId) => {
-                            console.log('Course generated:', courseId);
-                        }}
+                        onCourseGenerated={() => {}}
                     />
                 </motion.div>
             </div>

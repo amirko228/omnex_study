@@ -58,11 +58,13 @@ export interface User {
   twoFactorEnabled: boolean;
   createdAt: Date;
   updatedAt: Date;
+  bio?: string;
   profile?: UserProfile;
   subscription?: 'free' | 'pro' | 'enterprise';
   plan?: 'free' | 'pro' | 'enterprise'; // Alias for subscription
   purchasedCourses?: string[];
   hasPassword?: boolean;
+  provider?: string;
 }
 
 export interface UserProfile {

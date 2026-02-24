@@ -19,8 +19,7 @@ export function getUserIdFromToken(): string | null {
 
         // Возвращаем userId (обычно хранится как 'sub' или 'userId' в payload)
         return payload.sub || payload.userId || payload.id || null;
-    } catch (error) {
-        console.error('Failed to decode token:', error);
+    } catch {
         return null;
     }
 }

@@ -14,8 +14,8 @@ interface MainLayoutProps {
     locale: Locale;
     setLocale: (locale: Locale) => void;
     currentPage: string;
-    navigateToPage: (page: any) => void;
-    user: any;
+    navigateToPage: (page: string) => void;
+    user: import('@/types').User | null;
     isAuthenticated: boolean;
     handleLogout: () => void;
 }

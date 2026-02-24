@@ -8,12 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import {
   Bell,
-  Check,
   CheckCheck,
   Clock,
   AlertCircle,
   BookOpen,
-  Award,
   MessageSquare,
   X,
   Loader2
@@ -51,8 +49,8 @@ export function NotificationsPanel({ dict, locale = 'ru' }: NotificationsPanelPr
       if (countRes.success && countRes.data) {
         setUnreadCount(countRes.data.count);
       }
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error);
+    } catch {
+      // silently ignored
     } finally {
       setIsLoading(false);
     }

@@ -8,7 +8,6 @@ import { StatsSection } from '@/components/marketing/landing/stats-section';
 import { BlogPreviewSection } from '@/components/marketing/landing/blog-preview-section';
 import { FeaturesSection } from '@/components/marketing/landing/features-section';
 import { HowItWorksSection } from '@/components/marketing/landing/how-it-works-section';
-import { TestimonialsSection } from '@/components/marketing/landing/testimonials-section';
 import { CTASection } from '@/components/marketing/landing/cta-section';
 
 type EnhancedLandingProps = {

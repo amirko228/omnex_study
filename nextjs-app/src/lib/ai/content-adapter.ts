@@ -42,7 +42,7 @@ function adaptToText(lesson: Lesson, originalContent?: string): AdaptedContent {
 \`\`\`javascript
 // Пример кода для демонстрации концепций
 function example() {
-  console.log('AI адаптировал этот контент специально для вас');
+  // AI adapted content example
 }
 \`\`\`
 

@@ -26,13 +26,13 @@ import { toast } from 'sonner';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 import { localeNames, type Locale } from '@/lib/i18n/config';
 import { useTheme } from '@/lib/theme/theme-provider';
-import { FadeIn, SlideIn, StaggerContainer, StaggerItem } from '@/components/ui/page-transition';
+import { FadeIn, StaggerContainer, StaggerItem } from '@/components/ui/page-transition';
 import { AnimatedCard } from '@/components/ui/animated-elements';
 
 type SettingsPageProps = {
   dict: Dictionary;
   locale: Locale;
-  user: any;
+  user: import('@/types').User | null;
   onDeleteAccount?: () => void;
   onLocaleChange?: (newLocale: Locale) => void;
   refetchUser?: () => void;
@@ -46,14 +46,7 @@ export function SettingsPage({ dict, locale, user, onDeleteAccount, onLocaleChan
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
 
-  console.log('[SettingsPage] Current User State:', {
-    id: user?.id,
-    hasPassword: user?.hasPassword,
-    provider: user?.provider // if exists
-  });
-
   const handleChangePassword = async () => {
-    console.log('[SettingsPage] handleChangePassword started', { hasPassword: user?.hasPassword });
     if (user?.hasPassword && !currentPassword) {
       toast.error('Введите текущий пароль');
       return;
@@ -79,7 +72,7 @@ export function SettingsPage({ dict, locale, user, onDeleteAccount, onLocaleChan
       } else {
         toast.error(result.error?.message || 'Ошибка смены пароля');
       }
-    } catch (err) {
+    } catch {
       toast.error('Ошибка смены пароля');
     } finally {
       setIsChangingPassword(false);
@@ -90,7 +83,6 @@ export function SettingsPage({ dict, locale, user, onDeleteAccount, onLocaleChan
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDeleteAccount = async () => {
-    console.log('[SettingsPage] handleDeleteAccount started', { hasPassword: user?.hasPassword, deletePasswordExist: !!deletePassword });
     if (user?.hasPassword && !deletePassword) {
       toast.error('Введите пароль для подтверждения удаления');
       return;
@@ -109,7 +101,7 @@ export function SettingsPage({ dict, locale, user, onDeleteAccount, onLocaleChan
       } else {
         toast.error(result.error?.message || 'Ошибка удаления аккаунта. Проверьте пароль.');
       }
-    } catch (err) {
+    } catch {
       toast.error('Ошибка при удалении аккаунта');
     } finally {
       setIsDeleting(false);
@@ -153,8 +145,8 @@ export function SettingsPage({ dict, locale, user, onDeleteAccount, onLocaleChan
                   <Label>{dict.settings.theme}</Label>
                   <p className="text-sm text-muted-foreground">{dict.settings?.theme_desc || 'Выберите вашу тему'}</p>
                 </div>
-                <Select value={theme} onValueChange={(value: any) => {
-                  setTheme(value);
+                <Select value={theme} onValueChange={(value) => {
+                  setTheme(value as 'light' | 'dark' | 'system');
                   const themeNames: Record<string, string> = {
                     light: dict.settings.theme_light,
                     dark: dict.settings.theme_dark,
@@ -184,9 +176,9 @@ export function SettingsPage({ dict, locale, user, onDeleteAccount, onLocaleChan
                   </div>
                   <p className="text-sm text-muted-foreground">{dict.settings?.language_desc || 'Выберите предпочитаемый язык'}</p>
                 </div>
-                <Select value={locale} onValueChange={(value: any) => {
+                <Select value={locale} onValueChange={(value) => {
                   if (onLocaleChange) {
-                    onLocaleChange(value);
+                    onLocaleChange(value as 'ru' | 'en' | 'de' | 'es' | 'fr');
                   }
                 }}>
                   <SelectTrigger className="w-32">

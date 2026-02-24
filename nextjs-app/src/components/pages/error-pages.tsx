@@ -2,7 +2,7 @@
 
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
-import { Home, Search, ArrowLeft } from 'lucide-react';
+import { Home, ArrowLeft } from 'lucide-react';
 
 type NotFoundPageProps = {
   onNavigate: (page: string) => void;
@@ -40,7 +40,7 @@ export function NotFoundPage({ onNavigate }: NotFoundPageProps) {
             transition={{ delay: 0.5 }}
             className="text-muted-foreground text-lg max-w-md mx-auto"
           >
-            Sorry, we couldn't find the page you're looking for. It might have been moved or deleted.
+            Sorry, we couldn&apos;t find the page you&apos;re looking for. It might have been moved or deleted.
           </motion.p>
         </motion.div>
 
@@ -138,7 +138,7 @@ export function ServerErrorPage({ onNavigate }: NotFoundPageProps) {
             transition={{ delay: 0.5 }}
             className="text-muted-foreground text-lg max-w-md mx-auto"
           >
-            Oops! Something went wrong on our end. We're working to fix it. Please try again later.
+            Oops! Something went wrong on our end. We&apos;re working to fix it. Please try again later.
           </motion.p>
         </motion.div>
 

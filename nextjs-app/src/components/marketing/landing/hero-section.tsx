@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { motion } from 'motion/react';
 import { FadeIn, SlideIn } from '@/components/ui/page-transition';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ type HeroSectionProps = {
     handleCTAClick: () => void;
 };
 
-export function HeroSection({ dict, onNavigate, isAuthenticated, handleCTAClick }: HeroSectionProps) {
+export function HeroSection({ dict, onNavigate, handleCTAClick }: HeroSectionProps) {
     return (
         <section className="relative overflow-hidden border-b border-border py-20 md:py-32 bg-gradient-to-br from-background via-primary/5 to-background">
             {/* Animated background elements with MORE motion */}
@@ -176,34 +176,45 @@ export function HeroSection({ dict, onNavigate, isAuthenticated, handleCTAClick 
     );
 }
 
+function generateParticles() {
+    return [...Array(20)].map((_, i) => ({
+        id: i,
+        x: Math.random() * 200 - 100,
+        duration: Math.random() * 10 + 10,
+        delay: Math.random() * 5,
+        left: Math.random() * 100
+    }));
+}
+
+type Particle = { id: number; x: number; duration: number; delay: number; left: number };
+
+const emptySubscribe = () => () => {};
+
 function ParticleEffects() {
-    const [mounted, setMounted] = useState(false);
+    const isClient = useSyncExternalStore(emptySubscribe, () => true, () => false);
+    const [particles] = useState<Particle[]>(() => generateParticles());
 
-    useEffect(() => {
-        setMounted(true);
-    }, []);
-
-    if (!mounted) return null;
+    if (!isClient) return null;
 
     return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            {[...Array(20)].map((_, i) => (
+            {particles.map((p) => (
                 <motion.div
-                    key={i}
+                    key={p.id}
                     animate={{
                         y: [0, -1000],
-                        x: [0, Math.random() * 200 - 100],
+                        x: [0, p.x],
                         opacity: [0, 1, 0]
                     }}
                     transition={{
-                        duration: Math.random() * 10 + 10,
+                        duration: p.duration,
                         repeat: Infinity,
-                        delay: Math.random() * 5,
+                        delay: p.delay,
                         ease: "linear"
                     }}
                     className="absolute w-1 h-1 bg-primary/40 rounded-full"
                     style={{
-                        left: `${Math.random() * 100}%`,
+                        left: `${p.left}%`,
                         bottom: -10,
                     }}
                 />

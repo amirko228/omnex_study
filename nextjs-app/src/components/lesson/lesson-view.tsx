@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, ChevronLeft, ChevronRight, Clock, FileText, ListChecks, MessageSquare, ClipboardCheck, Loader2, Sparkles } from 'lucide-react';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
@@ -71,20 +70,22 @@ export function LessonView({
     },
   };
 
-  useEffect(() => {
-    if (currentFormat && lesson) {
-      setIsLoading(true);
-      adaptLessonContent(lesson, currentFormat)
-        .then((adapted) => {
-          setAdaptedContent(adapted);
-          setIsLoading(false);
-        })
-        .catch((error) => {
-          toast.error(dict.toasts.content_adaptation_error);
-          setIsLoading(false);
-        });
+  const loadAdaptedContent = useCallback(async () => {
+    if (!currentFormat || !lesson) return;
+    setIsLoading(true);
+    try {
+      const adapted = await adaptLessonContent(lesson, currentFormat);
+      setAdaptedContent(adapted);
+    } catch {
+      toast.error(dict.toasts.content_adaptation_error);
+    } finally {
+      setIsLoading(false);
     }
   }, [currentFormat, lesson, dict]);
+
+  useEffect(() => {
+    loadAdaptedContent();
+  }, [loadAdaptedContent]);
 
   return (
     <div className="space-y-4 md:space-y-6 pb-32 md:pb-6">
@@ -186,7 +187,7 @@ export function LessonView({
                       {JSON.parse(adaptedContent.content as string).length} вопросов
                     </Badge>
                   </div>
-                  {JSON.parse(adaptedContent.content as string).map((question: any, idx: number) => (
+                  {JSON.parse(adaptedContent.content as string).map((question: { id: string; question: string; options: string[]; correctAnswer: number; explanation: string }, idx: number) => (
                     <Card key={question.id} className="border-2 overflow-hidden">
                       <CardHeader className="pb-3 md:pb-4 px-3 md:px-6 pt-3 md:pt-6">
                         <CardTitle className="text-base md:text-lg leading-relaxed break-words whitespace-normal">
@@ -265,7 +266,7 @@ export function LessonView({
                         </div>
 
                         <div className="space-y-3 md:space-y-4">
-                          {assignment.tasks.map((task: any, idx: number) => (
+                          {assignment.tasks.map((task: { id: string; title: string; description: string; difficulty: string; estimatedTime: number }) => (
                             <Card key={task.id} className="border-2">
                               <CardHeader className="pb-3">
                                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">

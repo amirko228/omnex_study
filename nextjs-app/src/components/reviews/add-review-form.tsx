@@ -7,10 +7,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Send, X } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import type { Dictionary } from '@/lib/i18n/dictionaries';
 
 type AddReviewFormProps = {
     courseId: string;
-    dict: any; // Dictionary from i18n
+    dict: Dictionary;
     onSuccess?: () => void;
     onCancel?: () => void;
     existingReview?: {
@@ -36,23 +37,18 @@ export function AddReviewForm({ courseId, dict, onSuccess, onCancel, existingRev
         setIsSubmitting(true);
         setError('');
 
-        console.log('[AddReviewForm] Submitting review:', { courseId, rating, comment: comment.trim() });
-
         try {
             const response = await apiClient.post<{ id: string }>(`/courses/${courseId}/reviews`, {
                 rating,
                 comment: comment.trim() || undefined,
             });
 
-            console.log('[AddReviewForm] API Response:', response);
-
-            if (!response.success || (response as any).message?.includes('Invalid course ID')) {
-                let message = response.error?.message || (response as any).message || dict?.reviews?.error_submit || 'Не удалось отправить отзыв';
-
-                console.warn('[AddReviewForm] Submission failed:', message);
+            if (!response.success || (response as unknown as { message?: string }).message?.includes('Invalid course ID')) {
+                const errorData = response as unknown as { message?: string; error?: string };
+                let message = response.error?.message || errorData.message || dict?.reviews?.error_submit || 'Не удалось отправить отзыв';
 
                 // Special handling for 401 if refresh failed
-                if (response.error?.code === '401' || (response as any).error === 'Unauthorized') {
+                if (response.error?.code === '401' || errorData.error === 'Unauthorized') {
                     message = dict?.reviews?.error_unauthorized || 'Сессия истекла. Пожалуйста, войдите снова.';
                 }
 
@@ -60,12 +56,9 @@ export function AddReviewForm({ courseId, dict, onSuccess, onCancel, existingRev
                 return;
             }
 
-            console.log('[AddReviewForm] Review submitted successfully:', response.data);
-
             // Успешно создано
             if (onSuccess) onSuccess();
-        } catch (err: any) {
-            console.error('[AddReviewForm] Failed to submit review:', err);
+        } catch {
             setError(dict?.reviews?.error_submit || 'Не удалось отправить отзыв');
         } finally {
             setIsSubmitting(false);

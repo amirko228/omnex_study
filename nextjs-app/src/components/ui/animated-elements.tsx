@@ -4,10 +4,14 @@ import { motion } from 'motion/react';
 import { ReactNode } from 'react';
 import { cn } from './utils';
 
-interface AnimatedButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface AnimatedButtonProps {
   children: ReactNode;
   variant?: 'default' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
+  className?: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  type?: 'button' | 'submit' | 'reset';
 }
 
 export function AnimatedButton({ 
@@ -15,7 +19,9 @@ export function AnimatedButton({
   className,
   variant = 'default',
   size = 'md',
-  ...props 
+  onClick,
+  disabled,
+  type,
 }: AnimatedButtonProps) {
   return (
     <motion.button
@@ -39,7 +45,9 @@ export function AnimatedButton({
         },
         className
       )}
-      {...props}
+      onClick={onClick}
+      disabled={disabled}
+      type={type}
     >
       {children}
     </motion.button>

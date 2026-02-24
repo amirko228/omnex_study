@@ -6,6 +6,11 @@ import { authApi } from '@/lib/api/auth';
 import { apiClient } from '@/lib/api-client';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 
+interface OAuthResponse {
+    token: string;
+    refreshToken?: string;
+}
+
 /**
  * Страница обработки OAuth callback.
  * 
@@ -61,8 +66,8 @@ export default function OAuthCallbackPage() {
                 );
 
                 // Проверяем ответ
-                if (response.data && (response.data as any).token) {
-                    const data = response.data as any;
+                if (response.data && (response.data as OAuthResponse).token) {
+                    const data = response.data as OAuthResponse;
 
                     // Сохраняем токены
                     apiClient.setToken(data.token);
@@ -81,11 +86,14 @@ export default function OAuthCallbackPage() {
                 } else {
                     throw new Error('Сервер не вернул токен авторизации');
                 }
-            } catch (err: any) {
+            } catch (err: unknown) {
+                const error = err as Record<string, unknown>;
+                const response = error?.response as Record<string, unknown> | undefined;
+                const data = response?.data as Record<string, unknown> | undefined;
                 setStatus('error');
                 setErrorMessage(
-                    err?.response?.data?.message ||
-                    err?.message ||
+                    (data?.message as string) ||
+                    (error?.message as string) ||
                     'Ошибка авторизации через OAuth. Попробуйте ещё раз.'
                 );
             }

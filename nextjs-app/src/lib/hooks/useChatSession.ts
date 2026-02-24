@@ -20,7 +20,6 @@ export function useChatSession() {
             const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
 
             if (!token) {
-                console.warn('[useChatSession] User not authenticated, skipping session creation');
                 return;
             }
 
@@ -28,19 +27,16 @@ export function useChatSession() {
             const savedSessionId = typeof window !== 'undefined' ? localStorage.getItem('chat_session_id') : null;
 
             if (savedSessionId) {
-                console.log('[useChatSession] Restoring saved session:', savedSessionId);
                 setSessionId(savedSessionId);
                 return;
             }
 
             // Создаём новую сессию только если нет сохранённой
             try {
-                console.log('[useChatSession] Creating new chat session...');
                 const response = await apiClient.post<{ id: string }>('/chat/sessions', {
                     title: 'AI Course Creator',
                 });
                 const newSessionId = response.data?.id;
-                console.log('[useChatSession] Session created:', newSessionId);
 
                 if (newSessionId) {
                     setSessionId(newSessionId);
@@ -49,10 +45,8 @@ export function useChatSession() {
                         localStorage.setItem('chat_session_id', newSessionId);
                     }
                 }
-            } catch (error: unknown) {
-                console.error('[useChatSession] Failed to create chat session:', error);
-                const message = error instanceof Error ? error.message : 'Unknown error';
-                console.error('[useChatSession] Error details:', message);
+            } catch {
+                // session creation failed
             }
         }
 
@@ -62,23 +56,18 @@ export function useChatSession() {
     // Сохранить сообщение
     const saveMessage = async (role: 'user' | 'ai', content: string, metadata?: Record<string, unknown>) => {
         if (!sessionId) {
-            console.warn('[useChatSession] No session ID, cannot save message');
             return;
         }
 
         setIsLoading(true);
         try {
-            console.log(`[useChatSession] Saving ${role} message to session ${sessionId}`);
             await apiClient.post(`/chat/sessions/${sessionId}/messages`, {
                 role,
                 content,
                 metadata,
             });
-            console.log(`[useChatSession] ${role} message saved successfully`);
-        } catch (error: unknown) {
-            console.error('[useChatSession] Failed to save message:', error);
-            const message = error instanceof Error ? error.message : 'Unknown error';
-            console.error('[useChatSession] Error details:', message);
+        } catch {
+            // message save failed
         } finally {
             setIsLoading(false);
         }
@@ -99,8 +88,7 @@ export function useChatSession() {
                 timestamp: new Date(msg.createdAt),
                 ...(msg.metadata && { metadata: msg.metadata }),
             }));
-        } catch (error) {
-            console.error('Failed to load chat history:', error);
+        } catch {
             // Сессия не найдена — очищаем сохранённый ID
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('chat_session_id');
@@ -112,14 +100,11 @@ export function useChatSession() {
     // Очистить чат (удалить сессию)
     const clearChat = async () => {
         if (!sessionId) {
-            console.warn('[useChatSession] No session ID, cannot clear chat');
             return false;
         }
 
         try {
-            console.log(`[useChatSession] Clearing chat session ${sessionId}`);
             await apiClient.delete(`/chat/sessions/${sessionId}`);
-            console.log('[useChatSession] Session deleted, creating new one...');
 
             // Удаляем старый sessionId из localStorage
             if (typeof window !== 'undefined') {
@@ -131,7 +116,6 @@ export function useChatSession() {
                 title: 'AI Course Creator',
             });
             const newSessionId = response.data?.id;
-            console.log('[useChatSession] New session created:', newSessionId);
 
             if (newSessionId) {
                 setSessionId(newSessionId);
@@ -141,10 +125,7 @@ export function useChatSession() {
                 }
             }
             return true;
-        } catch (error: unknown) {
-            console.error('[useChatSession] Failed to clear chat:', error);
-            const message = error instanceof Error ? error.message : 'Unknown error';
-            console.error('[useChatSession] Error details:', message);
+        } catch {
             return false;
         }
     };

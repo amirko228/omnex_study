@@ -25,7 +25,8 @@ export function ResetPassword({ dict, onBack }: ResetPasswordProps) {
   const [step, setStep] = useState<Step>('email');
   const [isLoading, setIsLoading] = useState(false);
 
-  const f = (dict as any)?.auth?.forgot || {};
+  const authSection = (dict as unknown as Record<string, Record<string, unknown>>)?.auth;
+  const f = (authSection?.forgot || {}) as Record<string, string>;
 
   // Шаг 1: Отправка кода на email
   const handleRequestCode = async (e: React.FormEvent) => {
@@ -46,7 +47,7 @@ export function ResetPassword({ dict, onBack }: ResetPasswordProps) {
       } else {
         toast.error(result.error?.message || f.error || 'Ошибка');
       }
-    } catch (err) {
+    } catch {
       toast.error(f.error || 'Ошибка сброса пароля');
     } finally {
       setIsLoading(false);
@@ -80,7 +81,7 @@ export function ResetPassword({ dict, onBack }: ResetPasswordProps) {
       } else {
         toast.error(result.error?.message || f.error || 'Ошибка');
       }
-    } catch (err) {
+    } catch {
       toast.error(f.error || 'Ошибка сброса пароля');
     } finally {
       setIsLoading(false);

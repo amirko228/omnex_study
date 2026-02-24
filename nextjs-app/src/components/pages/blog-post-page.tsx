@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { motion } from 'motion/react';
+import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -91,15 +90,7 @@ export function BlogPostPage({ slug, dict, locale, onBack, onNavigateToPost }: B
   const [isBookmarkLoading, setIsBookmarkLoading] = useState(false);
   const currentUserId = getUserIdFromToken();
 
-  if (!dict?.blog) {
-    return <DictionaryFallback />;
-  }
-
-  useEffect(() => {
-    loadPost();
-  }, [slug]);
-
-  const loadPost = async () => {
+  const loadPost = useCallback(async () => {
     try {
       setIsLoading(true);
 
@@ -135,7 +126,7 @@ export function BlogPostPage({ slug, dict, locale, onBack, onNavigateToPost }: B
         setPost(displayPost);
 
         // Track view
-        trackBlogView(apiPost.id).catch(console.error);
+        trackBlogView(apiPost.id).catch(() => {});
 
         // Load comments from API
         loadComments(apiPost.id);
@@ -181,8 +172,7 @@ export function BlogPostPage({ slug, dict, locale, onBack, onNavigateToPost }: B
           setRelatedPosts(related);
         }
       }
-    } catch (error) {
-      console.error('Failed to load post from API, trying local:', error);
+    } catch {
 
       // Fallback на локальные данные при ошибке
       const localPost = getLocalBlogPost(slug, locale);
@@ -218,16 +208,24 @@ export function BlogPostPage({ slug, dict, locale, onBack, onNavigateToPost }: B
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [slug, locale, dict]);
+
+  useEffect(() => {
+    loadPost();
+  }, [loadPost]);
 
   const loadComments = async (postId: string) => {
     try {
       const commentsData = await getBlogComments(postId);
       setComments(commentsData || []);
-    } catch (error) {
-      console.error('Failed to load comments:', error);
+    } catch {
+      // Comments unavailable
     }
   };
+
+  if (!dict?.blog) {
+    return <DictionaryFallback />;
+  }
 
   const handleLike = async () => {
     if (!post) return;
@@ -258,8 +256,7 @@ export function BlogPostPage({ slug, dict, locale, onBack, onNavigateToPost }: B
         likes: result.data!.liked ? prev.likes + 1 : prev.likes - 1,
       } : null);
       toast.success(result.data.liked ? dict.blog.like_added : dict.blog.like_removed);
-    } catch (_error) {
-      console.error('Failed to toggle like:', _error);
+    } catch {
       toast.error(dict.blog.failed_like || 'Не удалось поставить лайк');
     } finally {
       setIsLikeLoading(false);
@@ -294,8 +291,7 @@ export function BlogPostPage({ slug, dict, locale, onBack, onNavigateToPost }: B
         bookmarks: result.data!.bookmarked ? prev.bookmarks + 1 : prev.bookmarks - 1,
       } : null);
       toast.success(result.data.bookmarked ? dict.blog.bookmark_added : dict.blog.bookmark_removed);
-    } catch (_error) {
-      console.error('Failed to toggle bookmark:', _error);
+    } catch {
       toast.error(dict.blog.failed_bookmark || 'Не удалось сохранить в закладки');
     } finally {
       setIsBookmarkLoading(false);

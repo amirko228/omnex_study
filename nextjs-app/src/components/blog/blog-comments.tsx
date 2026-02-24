@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -11,11 +10,11 @@ import {
     Reply,
     Trash2,
     MoreVertical,
-    CornerDownRight,
     MessageSquare
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ru, enUS } from 'date-fns/locale';
+import type { Locale } from 'date-fns';
 import { toast } from 'sonner';
 import { createBlogComment, deleteBlogComment, type BlogComment } from '@/lib/api/blog';
 import {
@@ -31,7 +30,7 @@ interface BlogCommentsProps {
     currentUserId?: string;
     locale: string;
     onCommentAdded: () => void;
-    dict: any;
+    dict: Record<string, string>;
 }
 
 export function BlogComments({
@@ -86,7 +85,7 @@ export function BlogComments({
 
             onCommentAdded();
             toast.success(dict.comment_added || 'Comment added');
-        } catch (error) {
+        } catch {
             toast.error(dict.error_adding || 'Failed to add comment');
         } finally {
             setIsSubmitting(false);
@@ -98,7 +97,7 @@ export function BlogComments({
             await deleteBlogComment(commentId);
             onCommentAdded();
             toast.success(dict.comment_deleted || 'Comment deleted');
-        } catch (error) {
+        } catch {
             toast.error(dict.error_deleting || 'Failed to delete comment');
         }
     };
@@ -174,7 +173,7 @@ export function BlogComments({
 interface CommentItemProps {
     comment: BlogComment;
     currentUserId?: string;
-    dateLocale: any;
+    dateLocale: Locale;
     onReply: (id: string) => void;
     onDelete: (id: string) => void;
     onCancelReply: () => void;
@@ -182,7 +181,7 @@ interface CommentItemProps {
     onReplySubmit: (parentId: string) => void;
     isSubmitting: boolean;
     isReply?: boolean;
-    dict: any;
+    dict: Record<string, string>;
 }
 
 function CommentItem({

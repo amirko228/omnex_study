@@ -22,7 +22,7 @@ import { config } from '@/lib/config';
 interface RegisterPageProps {
     dict: Dictionary;
     onSubmit: (data: RegisterFormData) => void;
-    setCurrentPage: (page: any) => void;
+    setCurrentPage: (page: string) => void;
     isLoading?: boolean;
 }
 
@@ -49,11 +49,9 @@ export const RegisterPage = ({ dict, onSubmit, setCurrentPage, isLoading }: Regi
             const oauthUrl = data?.data?.url || data?.url;
             if (oauthUrl) {
                 window.location.href = oauthUrl;
-            } else {
-                console.error('OAuth: URL не получен', data);
             }
-        } catch (err) {
-            console.error('OAuth error:', err);
+        } catch {
+            // silently ignored
         }
     };
 
