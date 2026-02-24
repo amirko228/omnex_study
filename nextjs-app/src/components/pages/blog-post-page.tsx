@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
+import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +27,7 @@ import {
   getBlogComments,
   getPopularPosts,
   type BlogComment,
+  type BlogPost as ApiBlogPost,
 } from '@/lib/api/blog';
 import { getBlogPostBySlug as getLocalBlogPost, getRelatedPosts, type BlogPost as LocalBlogPost } from '@/lib/api/blog-data';
 import { BlogComments } from '@/components/blog/blog-comments';
@@ -81,17 +83,17 @@ type DisplayPost = {
 };
 
 export function BlogPostPage({ slug, dict, locale, onBack, onNavigateToPost }: BlogPostPageProps) {
-  if (!dict?.blog) {
-    return <DictionaryFallback />;
-  }
-
   const [post, setPost] = useState<DisplayPost | null>(null);
   const [comments, setComments] = useState<BlogComment[]>([]);
-  const [relatedPosts, setRelatedPosts] = useState<any[]>([]);
+  const [relatedPosts, setRelatedPosts] = useState<(ApiBlogPost | LocalBlogPost)[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLikeLoading, setIsLikeLoading] = useState(false);
   const [isBookmarkLoading, setIsBookmarkLoading] = useState(false);
   const currentUserId = getUserIdFromToken();
+
+  if (!dict?.blog) {
+    return <DictionaryFallback />;
+  }
 
   useEffect(() => {
     loadPost();
@@ -256,8 +258,8 @@ export function BlogPostPage({ slug, dict, locale, onBack, onNavigateToPost }: B
         likes: result.data!.liked ? prev.likes + 1 : prev.likes - 1,
       } : null);
       toast.success(result.data.liked ? dict.blog.like_added : dict.blog.like_removed);
-    } catch (error: any) {
-      console.error('Failed to toggle like:', error);
+    } catch (_error) {
+      console.error('Failed to toggle like:', _error);
       toast.error(dict.blog.failed_like || 'Не удалось поставить лайк');
     } finally {
       setIsLikeLoading(false);
@@ -292,8 +294,8 @@ export function BlogPostPage({ slug, dict, locale, onBack, onNavigateToPost }: B
         bookmarks: result.data!.bookmarked ? prev.bookmarks + 1 : prev.bookmarks - 1,
       } : null);
       toast.success(result.data.bookmarked ? dict.blog.bookmark_added : dict.blog.bookmark_removed);
-    } catch (error: any) {
-      console.error('Failed to toggle bookmark:', error);
+    } catch (_error) {
+      console.error('Failed to toggle bookmark:', _error);
       toast.error(dict.blog.failed_bookmark || 'Не удалось сохранить в закладки');
     } finally {
       setIsBookmarkLoading(false);
@@ -400,11 +402,14 @@ export function BlogPostPage({ slug, dict, locale, onBack, onNavigateToPost }: B
 
                   {/* Author */}
                   <div className="flex items-center gap-3 md:gap-4 p-4 md:p-6 rounded-xl bg-muted/50 border">
-                    <img
-                      src={post.author.avatar || '/default-avatar.png'}
-                      alt={post.author.name}
-                      className="w-12 h-12 md:w-16 md:h-16 rounded-full object-cover"
-                    />
+                    <div className="relative w-12 h-12 md:w-16 md:h-16 shrink-0">
+                      <Image
+                        src={post.author.avatar || '/default-avatar.png'}
+                        alt={post.author.name}
+                        fill
+                        className="rounded-full object-cover"
+                      />
+                    </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-base md:text-lg">{post.author.name}</p>
                       {(post.author.bio || post.author.role) && (
@@ -416,11 +421,13 @@ export function BlogPostPage({ slug, dict, locale, onBack, onNavigateToPost }: B
 
                 {/* Cover Image */}
                 {post.coverImage && (
-                  <div className="mb-8 md:mb-12 aspect-video rounded-2xl overflow-hidden bg-muted shadow-xl">
-                    <img
+                  <div className="mb-8 md:mb-12 aspect-video rounded-2xl overflow-hidden bg-muted shadow-xl relative">
+                    <Image
                       src={post.coverImage}
                       alt={post.title}
-                      className="w-full h-full object-cover"
+                      fill
+                      priority
+                      className="object-cover"
                     />
                   </div>
                 )}
@@ -513,17 +520,18 @@ export function BlogPostPage({ slug, dict, locale, onBack, onNavigateToPost }: B
                 <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">{dict.blog.related_posts}</h2>
                 <StaggerContainer>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {relatedPosts.map((relatedPost: any) => (
+                    {relatedPosts.map((relatedPost) => (
                       <StaggerItem key={relatedPost.id}>
                         <Card
                           className="cursor-pointer hover:shadow-xl transition-all group overflow-hidden h-full flex flex-col"
                           onClick={() => onNavigateToPost(relatedPost.slug)}
                         >
                           <div className="relative aspect-video overflow-hidden bg-muted">
-                            <img
-                              src={relatedPost.coverImage}
+                            <Image
+                              src={relatedPost.coverImage || '/placeholder-blog.jpg'}
                               alt={relatedPost.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              fill
+                              className="object-cover group-hover:scale-105 transition-transform duration-500"
                             />
                           </div>
                           <CardHeader className="pb-2 flex-1">
@@ -556,17 +564,18 @@ export function BlogPostPage({ slug, dict, locale, onBack, onNavigateToPost }: B
                     <CardTitle className="text-lg">📈 {dict.blog.popular_posts}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {relatedPosts.slice(0, 3).map((popularPost: any) => (
+                    {relatedPosts.slice(0, 3).map((popularPost) => (
                       <div
                         key={popularPost.id}
                         className="flex gap-3 cursor-pointer group"
                         onClick={() => onNavigateToPost(popularPost.slug)}
                       >
-                        <div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-muted">
-                          <img
-                            src={popularPost.coverImage}
+                        <div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-muted relative">
+                          <Image
+                            src={popularPost.coverImage || '/placeholder-blog.jpg'}
                             alt={popularPost.title}
-                            className="w-full h-full object-cover"
+                            fill
+                            className="object-cover"
                           />
                         </div>
                         <div className="flex-1 min-w-0">

@@ -11,6 +11,7 @@ import { MessageSquarePlus, Trash2, ChevronLeft, ChevronRight } from 'lucide-rea
 import { apiClient } from '@/lib/api-client';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import type { Dictionary } from '@/lib/i18n/dictionaries';
 
 type Review = {
     id: string;
@@ -34,7 +35,7 @@ type ReviewsStats = {
 type ReviewsSectionProps = {
     courseId: string;
     currentUserId?: string | null;
-    dict: any; // Dictionary type из i18n
+    dict: Dictionary;
 };
 
 export function ReviewsSection({ courseId, currentUserId, dict }: ReviewsSectionProps) {
@@ -52,9 +53,13 @@ export function ReviewsSection({ courseId, currentUserId, dict }: ReviewsSection
             console.log('[ReviewsSection] Loading reviews for courseId:', courseId);
             console.log('[ReviewsSection] Current userId:', currentUserId);
 
-            const response: any = await apiClient.get(`/courses/${courseId}/reviews`, {
-                params: { page, limit },
-            });
+            const response = await apiClient.get<{
+                data: Review[];
+                total: number;
+                page: number;
+                limit: number;
+                totalPages: number;
+            }>(`/courses/${courseId}/reviews`, { page, limit });
 
             console.log('[ReviewsSection] API response:', response);
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,8 +21,8 @@ import {
     Bookmark,
     FileText
 } from 'lucide-react';
-import { getBlogPosts, getPopularPosts, getFavoritePosts, type BlogPost } from '@/lib/api/blog';
-import { getBlogPosts as getLocalBlogPosts, getFeaturedPosts, type BlogCategory } from '@/lib/api/blog-data';
+import { getBlogPosts, getPopularPosts, getFavoritePosts, type BlogPost as ApiBlogPost } from '@/lib/api/blog';
+import { getBlogPosts as getLocalBlogPosts, getFeaturedPosts, type BlogCategory, type BlogPost as LocalBlogPost } from '@/lib/api/blog-data';
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/ui/page-transition';
 import { DictionaryFallback } from '@/components/ui/dictionary-fallback';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
@@ -45,22 +46,26 @@ const categoryColors: Record<string, string> = {
 };
 
 export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister, isAuthenticated }: BlogPageProps) {
-    // Null-safety проверка словаря
-    if (!dict?.blog) {
-        return <DictionaryFallback />;
-    }
-
     const [searchQuery, setSearchQuery] = useState('');
     const [showSearchResults, setShowSearchResults] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<BlogCategory | 'all'>('all');
-    const [apiPosts, setApiPosts] = useState<BlogPost[]>([]);
-    const [featuredApiPosts, setFeaturedApiPosts] = useState<BlogPost[]>([]);
+    const [apiPosts, setApiPosts] = useState<ApiBlogPost[]>([]);
+    const [featuredApiPosts, setFeaturedApiPosts] = useState<ApiBlogPost[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [useApi, setUseApi] = useState(true);
     const [showFavorites, setShowFavorites] = useState(false);
-    const [favoritePosts, setFavoritePosts] = useState<BlogPost[]>([]);
+    const [favoritePosts, setFavoritePosts] = useState<ApiBlogPost[]>([]);
     const [favoritesLoading, setFavoritesLoading] = useState(false);
     const searchContainerRef = useRef<HTMLDivElement>(null);
+
+    // Локальные данные как fallback
+    const localFeaturedPosts = useMemo(() => getFeaturedPosts(locale), [locale]);
+    const localPosts = useMemo(() => getLocalBlogPosts(locale), [locale]);
+
+    // Null-safety проверка словаря - перенесена ниже хуков
+    if (!dict?.blog) {
+        return <DictionaryFallback />;
+    }
 
     // Close search dropdown on click outside
     useEffect(() => {
@@ -93,7 +98,7 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
     const liveSearchResults = useMemo(() => {
         const q = searchQuery.trim().toLowerCase();
         if (q.length < 1) return [];
-        const posts: any[] = useApi ? apiPosts : localPosts;
+        const posts: (ApiBlogPost | LocalBlogPost)[] = useApi ? apiPosts : localPosts;
         return posts
             .filter(post =>
                 post.title.toLowerCase().includes(q) ||
@@ -105,14 +110,9 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
                 ...post,
                 snippet: getSnippet(post.excerpt || '', searchQuery.trim()),
             }));
-    }, [searchQuery, apiPosts, useApi, getSnippet]);
+    }, [searchQuery, apiPosts, localPosts, useApi, getSnippet]);
 
-    // Загрузка постов из API
-    useEffect(() => {
-        loadPosts();
-    }, []);
-
-    const loadPosts = async () => {
+    const loadPosts = useCallback(async () => {
         try {
             setIsLoading(true);
             const [postsResult, popularResult] = await Promise.all([
@@ -128,20 +128,21 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
                 // Если API пусто или ошибка — используем локальные данные
                 setUseApi(false);
             }
-        } catch (error) {
+        } catch (_error) {
             console.log('Blog API not available, using local data');
             setUseApi(false);
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
-    // Локальные данные как fallback
-    const localFeaturedPosts = getFeaturedPosts(locale);
-    const localPosts = getLocalBlogPosts(locale);
+    // Посты из API
+    useEffect(() => {
+        loadPosts();
+    }, [loadPosts]);
 
     const filteredPosts = useMemo(() => {
-        let posts: any[] = useApi ? apiPosts : localPosts;
+        let posts: (ApiBlogPost | LocalBlogPost)[] = useApi ? apiPosts : localPosts;
 
         // Filter by category
         if (selectedCategory !== 'all') {
@@ -153,8 +154,8 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
             const query = searchQuery.toLowerCase();
             posts = posts.filter(post =>
                 post.title.toLowerCase().includes(query) ||
-                post.excerpt.toLowerCase().includes(query) ||
-                (post.tags || []).some((tag: string) => tag.toLowerCase().includes(query))
+                (post.excerpt || '').toLowerCase().includes(query) ||
+                (post.tags || []).some((tag) => tag.toLowerCase().includes(query))
             );
         }
 
@@ -172,7 +173,7 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
             setFavoritesLoading(true);
             const result = await getFavoritePosts();
             setFavoritePosts(result);
-        } catch (error) {
+        } catch (_error) {
             console.log('Failed to load favorites');
         } finally {
             setFavoritesLoading(false);
@@ -259,7 +260,7 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
                                         exit={{ opacity: 0, y: -10 }}
                                         className="absolute top-full left-0 right-0 mt-2 bg-card border-2 rounded-xl shadow-2xl overflow-hidden z-50 max-h-[400px] overflow-y-auto"
                                     >
-                                        {liveSearchResults.map((post: any) => (
+                                        {liveSearchResults.map((post) => (
                                             <button
                                                 key={post.id || post.slug}
                                                 className="w-full text-left px-5 py-3 hover:bg-muted/50 transition-colors flex items-start gap-3 border-b last:border-0"
@@ -331,7 +332,7 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
                                 className={`text-xs md:text-sm gap-1.5 ${showFavorites ? 'bg-rose-500 hover:bg-rose-600 border-rose-500' : 'border-rose-300 text-rose-600 hover:bg-rose-50 dark:border-rose-700 dark:text-rose-400 dark:hover:bg-rose-950'}`}
                             >
                                 <Heart className={`h-3.5 w-3.5 ${showFavorites ? 'fill-white' : 'fill-rose-500'}`} />
-                                {(dict.blog as any).my_favorites || 'My Favorites'}
+                                {dict.blog.my_favorites || 'My Favorites'}
                             </Button>
                         </div>
                     </div>
@@ -349,7 +350,7 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
                     <div className="mb-16 md:mb-20">
                         <div className="flex items-center gap-2 mb-6 md:mb-8">
                             <Heart className="h-5 w-5 md:h-6 md:w-6 text-rose-500 fill-rose-500" />
-                            <h2 className="text-2xl md:text-3xl font-bold">{(dict.blog as any).my_favorites || 'My Favorites'}</h2>
+                            <h2 className="text-2xl md:text-3xl font-bold">{dict.blog.my_favorites || 'My Favorites'}</h2>
                         </div>
 
                         {!isAuthenticated ? (
@@ -359,7 +360,7 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
                                         <div className="h-14 w-14 md:h-16 md:w-16 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center mb-4 md:mb-6">
                                             <Heart className="h-7 w-7 md:h-8 md:w-8 text-rose-500" />
                                         </div>
-                                        <h3 className="text-xl md:text-2xl font-bold mb-2 text-center px-4">{(dict.blog as any).favorites_login_required || 'Log in to see your favorite posts'}</h3>
+                                        <h3 className="text-xl md:text-2xl font-bold mb-2 text-center px-4">{dict.blog.favorites_login_required || 'Log in to see your favorite posts'}</h3>
                                     </CardContent>
                                 </Card>
                             </FadeIn>
@@ -374,14 +375,14 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
                                         <div className="h-14 w-14 md:h-16 md:w-16 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center mb-4 md:mb-6">
                                             <Bookmark className="h-7 w-7 md:h-8 md:w-8 text-rose-500" />
                                         </div>
-                                        <h3 className="text-xl md:text-2xl font-bold mb-2 text-center px-4">{(dict.blog as any).favorites_empty || 'No favorites yet'}</h3>
+                                        <h3 className="text-xl md:text-2xl font-bold mb-2 text-center px-4">{dict.blog.favorites_empty || 'No favorites yet'}</h3>
                                     </CardContent>
                                 </Card>
                             </FadeIn>
                         ) : (
                             <StaggerContainer>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-                                    {favoritePosts.map((post: any) => (
+                                    {favoritePosts.map((post) => (
                                         <StaggerItem key={post.id}>
                                             <motion.div
                                                 whileHover={{ y: -8 }}
@@ -393,10 +394,11 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
                                                     onClick={() => onNavigateToPost(post.slug)}
                                                 >
                                                     <div className="relative aspect-video overflow-hidden bg-muted">
-                                                        <img
-                                                            src={post.coverImage}
+                                                        <Image
+                                                            src={post.coverImage || '/placeholder-blog.jpg'}
                                                             alt={post.title}
-                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                            fill
+                                                            className="object-cover group-hover:scale-105 transition-transform duration-500"
                                                         />
                                                         <div className="absolute top-3 left-3">
                                                             <Badge className={`${categoryColors[post.category] || ''} border text-xs`}>
@@ -432,11 +434,14 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-2 md:gap-3">
-                                                            <img
-                                                                src={post.author?.avatar || '/default-avatar.png'}
-                                                                alt={post.author?.name || ''}
-                                                                className="w-7 h-7 md:w-8 md:h-8 rounded-full object-cover"
-                                                            />
+                                                            <div className="relative w-7 h-7 md:w-8 md:h-8">
+                                                                <Image
+                                                                    src={post.author?.avatar || '/default-avatar.png'}
+                                                                    alt={post.author?.name || ''}
+                                                                    fill
+                                                                    className="rounded-full object-cover"
+                                                                />
+                                                            </div>
                                                             <div className="flex-1 min-w-0">
                                                                 <p className="font-semibold text-xs md:text-sm truncate">{post.author?.name}</p>
                                                             </div>
@@ -462,7 +467,7 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
 
                         <StaggerContainer>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                                {featuredPosts.slice(0, 3).map((post: any, index: number) => (
+                                {featuredPosts.slice(0, 3).map((post) => (
                                     <StaggerItem key={post.id}>
                                         <motion.div
                                             whileHover={{ y: -6 }}
@@ -473,10 +478,11 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
                                                 onClick={() => onNavigateToPost(post.slug)}
                                             >
                                                 <div className="relative aspect-[3/2] overflow-hidden bg-muted">
-                                                    <img
-                                                        src={post.coverImage}
+                                                    <Image
+                                                        src={post.coverImage || '/placeholder-blog.jpg'}
                                                         alt={post.title}
-                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                        fill
+                                                        className="object-cover group-hover:scale-105 transition-transform duration-500"
                                                     />
                                                     <div className="absolute top-3 left-3">
                                                         <Badge className={`${categoryColors[post.category] || ''} border text-xs`}>
@@ -496,7 +502,7 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
                                                     <div className="flex flex-wrap items-center gap-2 md:gap-3 text-xs text-muted-foreground mb-3">
                                                         <div className="flex items-center gap-1">
                                                             <Calendar className="h-3 w-3" />
-                                                            <span>{new Date(post.publishedAt || post.createdAt).toLocaleDateString(locale, {
+                                                            <span>{new Date(post.publishedAt || (post as ApiBlogPost).createdAt || Date.now()).toLocaleDateString(locale, {
                                                                 day: 'numeric',
                                                                 month: 'short',
                                                                 year: 'numeric'
@@ -516,11 +522,14 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-2">
-                                                        <img
-                                                            src={post.author?.avatar || '/default-avatar.png'}
-                                                            alt={post.author?.name || ''}
-                                                            className="w-7 h-7 rounded-full object-cover"
-                                                        />
+                                                        <div className="relative w-7 h-7">
+                                                            <Image
+                                                                src={post.author?.avatar || '/default-avatar.png'}
+                                                                alt={post.author?.name || ''}
+                                                                fill
+                                                                className="rounded-full object-cover"
+                                                            />
+                                                        </div>
                                                         <div className="flex-1 min-w-0">
                                                             <p className="font-semibold text-xs md:text-sm truncate">{post.author?.name}</p>
                                                         </div>
@@ -564,7 +573,7 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
                         ) : (
                             <StaggerContainer key={`stagger-${selectedCategory}-${searchQuery}`}>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-                                    {filteredPosts.map((post: any) => (
+                                    {filteredPosts.map((post) => (
                                         <StaggerItem key={`${post.id}-${selectedCategory}-${searchQuery}`}>
                                             <motion.div
                                                 whileHover={{ y: -8 }}
@@ -576,10 +585,11 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
                                                     onClick={() => onNavigateToPost(post.slug)}
                                                 >
                                                     <div className="relative aspect-video overflow-hidden bg-muted">
-                                                        <img
-                                                            src={post.coverImage}
+                                                        <Image
+                                                            src={post.coverImage || '/placeholder-blog.jpg'}
                                                             alt={post.title}
-                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                            fill
+                                                            className="object-cover group-hover:scale-105 transition-transform duration-500"
                                                         />
                                                         <div className="absolute top-3 left-3">
                                                             <Badge className={`${categoryColors[post.category] || ''} border text-xs`}>
@@ -611,11 +621,14 @@ export function BlogPage({ dict, locale, onNavigateToPost, onNavigateToRegister,
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-2 md:gap-3">
-                                                            <img
-                                                                src={post.author?.avatar || '/default-avatar.png'}
-                                                                alt={post.author?.name || ''}
-                                                                className="w-7 h-7 md:w-8 md:h-8 rounded-full object-cover"
-                                                            />
+                                                            <div className="relative w-7 h-7 md:w-8 md:h-8">
+                                                                <Image
+                                                                    src={post.author?.avatar || '/default-avatar.png'}
+                                                                    alt={post.author?.name || ''}
+                                                                    fill
+                                                                    className="rounded-full object-cover"
+                                                                />
+                                                            </div>
                                                             <div className="flex-1 min-w-0">
                                                                 <p className="font-semibold text-xs md:text-sm truncate">{post.author?.name}</p>
                                                             </div>

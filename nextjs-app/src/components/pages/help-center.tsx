@@ -30,7 +30,71 @@ interface ChatMessage {
   time: string;
 }
 
-const categoryIcons: Record<string, any> = {
+interface HelpArticle {
+  id: string;
+  title: string;
+  content: string;
+}
+
+interface HelpCategory {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  articles: HelpArticle[];
+}
+
+interface FAQ {
+  question: string;
+  answer: string;
+}
+
+interface HelpCenterData {
+  title?: string;
+  subtitle?: string;
+  search_placeholder?: string;
+  knowledge_base?: string;
+  knowledge_base_desc?: string;
+  browse_all?: string;
+  chat_support?: string;
+  chat_online?: string;
+  chat_support_desc?: string;
+  start_chat?: string;
+  email_support?: string;
+  email_support_desc?: string;
+  contact_support?: string;
+  faq_title?: string;
+  no_answer_title?: string;
+  no_answer_desc?: string;
+  back?: string;
+  articles?: string;
+  helpful?: string;
+  thanks_feedback?: string;
+  yes?: string;
+  no?: string;
+  related_articles?: string;
+  chat_greeting?: string;
+  chat_auto_reply?: string;
+  chat_placeholder?: string;
+  chat_support_hours?: string;
+  email_form_title?: string;
+  email_form_desc?: string;
+  email_name?: string;
+  email_address?: string;
+  email_subject?: string;
+  email_message?: string;
+  email_send?: string;
+  email_sending?: string;
+  email_sent_success?: string;
+  email_send_error?: string;
+  email_fill_fields?: string;
+  connecting_operator?: string;
+  faqs?: FAQ[];
+  kb_categories?: HelpCategory[];
+  email_subjects?: string[];
+}
+
+const categoryIcons: Record<string, React.ElementType> = {
   rocket: Rocket,
   sparkles: Sparkles,
   user: User,
@@ -41,8 +105,8 @@ export function HelpCenter({ dict }: HelpCenterProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('main');
-  const [selectedCategory, setSelectedCategory] = useState<any>(null);
-  const [selectedArticle, setSelectedArticle] = useState<any>(null);
+  const [selectedCategory, setSelectedCategory] = useState<HelpCategory | null>(null);
+  const [selectedArticle, setSelectedArticle] = useState<HelpArticle | null>(null);
   const [feedbackGiven, setFeedbackGiven] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
@@ -60,7 +124,7 @@ export function HelpCenter({ dict }: HelpCenterProps) {
   });
   const [emailSending, setEmailSending] = useState(false);
 
-  const hc = (dict?.help_center || {}) as any;
+  const hc = (dict?.help_center || {}) as HelpCenterData;
   const faqs = hc.faqs || [];
   const kbCategories = hc.kb_categories || [];
   const emailSubjects = hc.email_subjects || [];
@@ -114,11 +178,11 @@ export function HelpCenter({ dict }: HelpCenterProps) {
   const trimmedQuery = searchQuery.trim().toLowerCase();
   const searchResults = trimmedQuery.length >= 1
     ? [
-      ...kbCategories.flatMap((cat: any) =>
-        (cat.articles || []).filter((a: any) =>
+      ...kbCategories.flatMap((cat) =>
+        (cat.articles || []).filter((a) =>
           a.title.toLowerCase().includes(trimmedQuery) ||
           a.content.toLowerCase().includes(trimmedQuery)
-        ).map((a: any) => ({
+        ).map((a) => ({
           type: 'article' as const,
           id: a.id,
           title: a.title,
@@ -129,12 +193,12 @@ export function HelpCenter({ dict }: HelpCenterProps) {
         }))
       ),
       ...faqs
-        .map((faq: any, index: number) => ({ ...faq, index }))
-        .filter((faq: any) =>
+        .map((faq, index) => ({ ...faq, index }))
+        .filter((faq) =>
           faq.question.toLowerCase().includes(trimmedQuery) ||
           faq.answer.toLowerCase().includes(trimmedQuery)
         )
-        .map((faq: any) => ({
+        .map((faq) => ({
           type: 'faq' as const,
           id: `faq-${faq.index}`,
           title: faq.question,
@@ -207,7 +271,7 @@ export function HelpCenter({ dict }: HelpCenterProps) {
     }
   };
 
-  const openArticle = (article: any, category?: any) => {
+  const openArticle = (article: HelpArticle, category?: HelpCategory) => {
     setSelectedArticle(article);
     if (category) setSelectedCategory(category);
     setViewMode('article');
@@ -265,7 +329,7 @@ export function HelpCenter({ dict }: HelpCenterProps) {
                     setShowSearchResults(false);
                     setSearchQuery('');
                   } else {
-                    openArticle(first, kbCategories.find((c: any) => c.id === first.categoryId));
+                    openArticle(first as unknown as HelpArticle, kbCategories.find((c) => c.id === (first as any).categoryId));
                     setShowSearchResults(false);
                     setSearchQuery('');
                   }
@@ -298,7 +362,7 @@ export function HelpCenter({ dict }: HelpCenterProps) {
                         if (result.type === 'faq') {
                           setViewMode('main');
                         } else {
-                          openArticle(result, kbCategories.find((c: any) => c.id === result.categoryId));
+                          openArticle(result as unknown as HelpArticle, kbCategories.find((c) => c.id === result.categoryId));
                         }
                         setShowSearchResults(false);
                         setSearchQuery('');
@@ -426,7 +490,7 @@ export function HelpCenter({ dict }: HelpCenterProps) {
               <div className="max-w-4xl mx-auto">
                 <h2 className="text-2xl md:text-3xl font-bold mb-8 text-center">{hc.faq_title || 'FAQ'}</h2>
                 <Accordion type="single" collapsible className="space-y-3">
-                  {faqs.map((faq: any, index: number) => (
+                  {faqs.map((faq, index) => (
                     <AccordionItem
                       key={index}
                       value={`item-${index}`}
@@ -491,7 +555,7 @@ export function HelpCenter({ dict }: HelpCenterProps) {
               </h2>
 
               <div className="grid md:grid-cols-2 gap-6">
-                {kbCategories.map((category: any) => {
+                {kbCategories.map((category) => {
                   const IconComponent = categoryIcons[category.icon] || BookOpen;
                   return (
                     <motion.div
@@ -518,7 +582,7 @@ export function HelpCenter({ dict }: HelpCenterProps) {
                         </CardHeader>
                         <CardContent className="pt-0">
                           <div className="space-y-2">
-                            {(category.articles || []).map((article: any) => (
+                            {(category.articles || []).map((article) => (
                               <button
                                 key={article.id}
                                 className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors flex items-center gap-3 group/item"
@@ -616,8 +680,8 @@ export function HelpCenter({ dict }: HelpCenterProps) {
                   <h3 className="text-lg font-semibold mb-4">{hc.related_articles || 'Related Articles'}</h3>
                   <div className="space-y-2">
                     {(selectedCategory.articles || [])
-                      .filter((a: any) => a.id !== selectedArticle.id)
-                      .map((article: any) => (
+                      .filter((a) => a.id !== selectedArticle.id)
+                      .map((article) => (
                         <button
                           key={article.id}
                           className="w-full text-left px-4 py-3 rounded-lg border hover:border-primary hover:bg-muted/50 transition-all flex items-center gap-3 group/related"

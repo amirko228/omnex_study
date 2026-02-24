@@ -84,7 +84,7 @@ export const usersApi = {
    * Delete account
    */
   async deleteAccount(password: string): Promise<ApiResponse<void>> {
-    return apiClient.delete<void>('/users/me');
+    return apiClient.delete<void>('/users/me', { password });
   },
 
   /**

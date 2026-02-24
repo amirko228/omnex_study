@@ -26,7 +26,6 @@ export function StarRating({ value, onChange, readonly = false, size = 'md', sho
         <div className="flex items-center gap-1">
             {[1, 2, 3, 4, 5].map((star) => {
                 const isFilled = star <= value;
-                const isHalf = star === Math.ceil(value) && value % 1 !== 0;
 
                 return (
                     <button

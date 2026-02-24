@@ -52,7 +52,7 @@ export function PaymentModal({ isOpen, onClose, onConfirm, planName, price }: Pa
                 setExpiry('');
                 setCvc('');
             }, 2000);
-        } catch (err) {
+        } catch (_err) {
             setError('Payment failed. Please try again.');
             setStep('details');
         }

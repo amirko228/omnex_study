@@ -11,33 +11,31 @@ import { PageTransition, FadeIn, StaggerContainer, StaggerItem } from '@/compone
 import { toast } from 'sonner';
 
 interface PricingPageProps {
-    dict: any;
+    dict: Dictionary;
     onNavigate: (page: string) => void;
 }
 
 import { PaymentModal } from '@/components/ui/payment-modal';
 import { paymentsApi } from '@/lib/api/payments';
+import type { Dictionary } from '@/lib/i18n/dictionaries';
 
 export function PricingPage({ dict, onNavigate }: PricingPageProps) {
     const { isAuthenticated, subscribe, user, subscription } = useAppContext();
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [pendingPlan, setPendingPlan] = useState<{ name: string, price: string } | null>(null);
 
     // Safety check for dict.pricing
     if (!dict?.pricing) {
         return null;
     }
-    const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-    const [pendingPlan, setPendingPlan] = useState<{ name: string, price: string } | null>(null);
 
     const handleSelectPlan = async (plan: string, price: string) => {
-        setSelectedPlan(plan);
-
         if (plan === 'Free' || plan === 'Бесплатно' || plan === 'Kostenlos' || plan === 'Gratis' || plan === 'Gratuit') {
             if (!isAuthenticated) {
                 onNavigate('register');
                 return;
             }
-            toast.info(dict.pricing.free.cta); // "Already on free plan" localized if possible, or just ignore
+            toast.info(dict.pricing.free.cta);
             return;
         }
 
@@ -70,18 +68,19 @@ export function PricingPage({ dict, onNavigate }: PricingPageProps) {
             const paymentRes = await paymentsApi.createPayment({
                 amount,
                 currency: 'USD',
-                provider: 'stripe' as any,
+                provider: 'stripe' as never,
                 description: `Подписка ${pendingPlan.name}`,
                 metadata: { plan: planId },
             });
 
             // 2. Подтверждаем платёж
-            const paymentId = (paymentRes.data as any)?.paymentId;
+            const paymentData = paymentRes.data as { paymentId?: string } | undefined;
+            const paymentId = paymentData?.paymentId;
             if (paymentId) {
                 await paymentsApi.confirmPayment(paymentId);
             }
-        } catch (err) {
-            console.warn('Payment API error (continuing with subscription):', err);
+        } catch (_err) {
+            console.warn('Payment API error (continuing with subscription):', _err);
         }
 
         try {

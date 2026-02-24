@@ -13,16 +13,16 @@ import type { DifficultyLevel, LessonFormat } from './ai-service';
 export const AI_MODELS = {
   // Для генерации курсов и сложного контента
   COURSE_GENERATION: 'gpt-4-turbo',
-  
+
   // Для чата и диалогов
   CHAT: 'gpt-4-turbo',
-  
+
   // Для переводов
   TRANSLATION: 'gpt-4-turbo',
-  
+
   // Для быстрых операций (адаптация, квизы)
   QUICK_TASKS: 'gpt-4-turbo',
-  
+
   // Для embeddings (семантический поиск)
   EMBEDDINGS: 'text-embedding-3-small'
 } as const;
@@ -38,28 +38,28 @@ export const AI_PARAMS = {
     presence_penalty: 0.0,
     frequency_penalty: 0.0
   },
-  
+
   TRANSLATION: {
     temperature: 0.3, // Низкая для точности
     max_tokens: 2048,
     presence_penalty: 0.0,
     frequency_penalty: 0.0
   },
-  
+
   CHAT: {
     temperature: 0.8, // Более "человечный"
     max_tokens: 1024,
     presence_penalty: 0.6,
     frequency_penalty: 0.3
   },
-  
+
   ADAPTATION: {
     temperature: 0.7,
     max_tokens: 2048,
     presence_penalty: 0.0,
     frequency_penalty: 0.0
   },
-  
+
   QUIZ_GENERATION: {
     temperature: 0.8,
     max_tokens: 2048,
@@ -167,7 +167,7 @@ Do not add explanations or comments. Output only the translation.`,
 - Use short sentences and paragraphs
 - Explain "why" before "how"
 - Provide step-by-step instructions`,
-      
+
       intermediate: `Adapt to INTERMEDIATE level:
 - Use moderate complexity
 - Assume basic knowledge of fundamentals
@@ -176,7 +176,7 @@ Do not add explanations or comments. Output only the translation.`,
 - Provide real-world scenarios
 - Balance theory and practice
 - Challenge the learner appropriately`,
-      
+
       advanced: `Adapt to ADVANCED level:
 - Use technical depth and precision
 - Assume strong foundational knowledge
@@ -473,7 +473,7 @@ export function getCourseGenerationPrompt(params: {
   learningGoals?: string[];
 }): string {
   const systemPrompt = SYSTEM_PROMPTS.COURSE_GENERATOR(params.language, params.level);
-  
+
   const userPrompt = `Create a comprehensive ${params.level} level course about "${params.topic}" in ${params.language}.
 
 Duration: ${params.duration} hours
@@ -489,18 +489,22 @@ Generate a complete course structure with modules and lessons in valid JSON form
 /**
  * Валидация ответа ИИ
  */
-export function validateAIResponse(response: any, expectedType: 'course' | 'translation' | 'chat' | 'quiz'): boolean {
+export function validateAIResponse(response: unknown, expectedType: 'course' | 'translation' | 'chat' | 'quiz'): boolean {
   if (!response) return false;
 
   switch (expectedType) {
-    case 'course':
-      return !!(response.title && response.modules && Array.isArray(response.modules));
+    case 'course': {
+      const r = response as { title?: string; modules?: any[] };
+      return !!(r.title && r.modules && Array.isArray(r.modules));
+    }
     case 'translation':
       return typeof response === 'string' && response.length > 0;
     case 'chat':
       return typeof response === 'string' && response.length > 0;
-    case 'quiz':
-      return Array.isArray(response) && response.every(q => q.question && q.options && Array.isArray(q.options));
+    case 'quiz': {
+      const r = response as Array<{ question?: string; options?: any[] }>;
+      return Array.isArray(r) && r.every(q => q.question && q.options && Array.isArray(q.options));
+    }
     default:
       return false;
   }
@@ -512,7 +516,7 @@ export function validateAIResponse(response: any, expectedType: 'course' | 'tran
 export function estimateTokenCost(operation: string, inputLength: number): number {
   // Примерная оценка токенов (1 токен ≈ 4 символа)
   const inputTokens = Math.ceil(inputLength / 4);
-  
+
   const estimatedOutputTokens = {
     course: 4000,
     translation: inputTokens * 1.2,

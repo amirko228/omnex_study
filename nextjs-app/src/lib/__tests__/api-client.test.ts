@@ -42,7 +42,7 @@ class ApiClient {
         return headers;
     }
 
-    async get<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
+    async get<T>(endpoint: string, params?: Record<string, unknown>): Promise<T> {
         let url = `${this.baseUrl}${endpoint}`;
 
         if (params) {
@@ -67,7 +67,7 @@ class ApiClient {
         return response.json();
     }
 
-    async post<T>(endpoint: string, data?: any): Promise<T> {
+    async post<T>(endpoint: string, data?: unknown): Promise<T> {
         const response = await fetch(`${this.baseUrl}${endpoint}`, {
             method: 'POST',
             headers: this.buildHeaders(),

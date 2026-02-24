@@ -13,7 +13,7 @@ const mockRegister = jest.fn();
 
 // Мок хука (примерная структура для тестирования)
 const useAuthMock = () => {
-    const [user, setUser] = React.useState<any>(null);
+    const [user, setUser] = React.useState<{ id: string; email: string; name: string } | null>(null);
     const [isLoading, setIsLoading] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
 

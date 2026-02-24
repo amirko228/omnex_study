@@ -266,7 +266,8 @@ export function useCourseProgress() {
    */
   const resetCourseProgress = (courseId: string) => {
     setProgressData((prev) => {
-      const { [courseId]: _removed, ...remainingCourses } = prev.courses;
+      const remainingCourses = { ...prev.courses };
+      delete remainingCourses[courseId];
       return {
         ...prev,
         courses: remainingCourses,
