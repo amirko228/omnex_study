@@ -41,7 +41,7 @@ export class EmailService {
         // Проверяем подключение при старте
         this.transporter.verify()
             .then(() => this.logger.log('✅ SMTP подключение успешно'))
-            .catch((err) => this.logger.error(`❌ SMTP ошибка подключения: ${err.message}`));
+            .catch((err: any) => this.logger.error(`❌ SMTP ошибка подключения: ${err.message}`));
     }
 
     // Проверка настроен ли SMTP

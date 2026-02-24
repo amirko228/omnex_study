@@ -297,7 +297,7 @@ export class AuthService {
 
             try {
                 await this.sendSmtpEmail({ host, port, user: smtpUser, pass, from, to: email, subject, html });
-            } catch (err) {
+            } catch (err: any) {
                 this.logger.error(`Ошибка отправки email: ${err.message}`);
             }
         } else {
